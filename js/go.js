@@ -1,3 +1,4 @@
+window.firebaseAppLoaded = true;
 import { db } from "./firebase-config.js";
 import { 
   doc, 
@@ -67,8 +68,11 @@ async function initRedirection() {
       showError("Link Inactive", "This short link is currently disabled by the administrator.");
       return;
     }
-    
     destinationUrl = linkData.originalUrl;
+    // Senior QA Check: Ensure original URL has a protocol before routing to prevent relative redirection loops
+    if (destinationUrl && !/^https?:\/\//i.test(destinationUrl)) {
+      destinationUrl = "https://" + destinationUrl;
+    }
     
     // 3. Increment click count in Firestore
     try {

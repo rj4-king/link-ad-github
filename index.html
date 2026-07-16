@@ -146,6 +146,7 @@
                   <tr>
                     <th>Short Link</th>
                     <th>Destination URL</th>
+                    <th class="text-center">Created</th>
                     <th class="text-center">Clicks</th>
                     <th class="text-center">Active</th>
                     <th class="text-right">Actions</th>
@@ -154,7 +155,7 @@
                 <tbody id="linksTableBody">
                   <!-- JS dynamically populates here -->
                   <tr>
-                    <td colspan="5" class="text-center text-muted" style="padding: 3rem 0;">
+                    <td colspan="6" class="text-center text-muted" style="padding: 3rem 0;">
                       <div class="spinner"></div>
                       <p class="mt-2">Fetching short links...</p>
                     </td>
@@ -268,5 +269,25 @@
 
   <!-- Dashboard JavaScript Code Logic -->
   <script type="module" src="js/admin.js"></script>
+  
+  <script>
+    // Fail-safe timeout script to catch CDN load errors
+    setTimeout(function() {
+      if (!window.firebaseAppLoaded) {
+        var authCard = document.querySelector('.auth-card');
+        if (authCard) {
+          authCard.innerHTML = `
+            <div style="font-size: 3rem; margin-bottom: 1rem; text-align: center;">⚠️</div>
+            <h2 style="text-align: center;">Connection Timeout</h2>
+            <p class="text-secondary mt-2" style="text-align: center; font-size: 0.9rem;">
+              Could not establish connection with Firebase SDK CDNs. 
+              Please check your network connection or console logs for configuration issues.
+            </p>
+            <button onclick="window.location.reload()" class="btn btn-primary btn-block mt-4">Retry Connection</button>
+          `;
+        }
+      }
+    }, 6000);
+  </script>
 </body>
 </html>

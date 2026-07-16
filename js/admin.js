@@ -1,3 +1,4 @@
+window.firebaseAppLoaded = true;
 import { auth, db } from "./firebase-config.js";
 import { 
   signInWithEmailAndPassword, 
@@ -13,8 +14,7 @@ import {
   deleteDoc, 
   onSnapshot, 
   query, 
-  orderBy, 
-  serverTimestamp 
+  orderBy
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // DOM Elements - Auth Screen
@@ -110,6 +110,8 @@ function getShortBaseUrl() {
   let path = loc.pathname;
   if (path.endsWith("admin.html")) {
     path = path.slice(0, -10); // Remove "admin.html"
+  } else if (path.endsWith("index.html")) {
+    path = path.slice(0, -10); // Remove "index.html"
   }
   if (!path.endsWith("/")) {
     path += "/";
@@ -242,7 +244,7 @@ function renderLinksTable(links) {
   if (filteredLinks.length === 0) {
     linksTableBody.innerHTML = `
       <tr>
-        <td colspan="5" class="text-center text-muted" style="padding: 2.5rem 0;">
+        <td colspan="6" class="text-center text-muted" style="padding: 2.5rem 0;">
           <p class="empty-state-icon">🔍</p>
           <p class="empty-state-text">No matching links found.</p>
         </td>
@@ -256,6 +258,7 @@ function renderLinksTable(links) {
   linksTableBody.innerHTML = filteredLinks.map(link => {
     const shortLink = baseUrl + link.id;
     const isChecked = link.status ? 'checked' : '';
+    const createdDate = link.createdAt ? new Date(link.createdAt).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'}) : 'N/A';
     
     return `
       <tr>
@@ -270,6 +273,7 @@ function renderLinksTable(links) {
         <td>
           <div class="link-original" title="${link.originalUrl}">${escapeHTML(link.originalUrl)}</div>
         </td>
+        <td class="text-center text-secondary" style="font-size: 0.85rem; white-space: nowrap;">${createdDate}</td>
         <td class="text-center font-weight-600">${link.clicks || 0}</td>
         <td class="text-center">
           <label class="switch">

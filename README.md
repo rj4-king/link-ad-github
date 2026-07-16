@@ -6,7 +6,7 @@ AdLinker is a production-ready, fully static, serverless URL shortener applicati
 
 ```text
 ├── 404.html                # Routing middleware for clean URLs on GitHub Pages
-├── admin.html              # Administrator authentication screen & control panel
+├── index.html              # Administrator dashboard & login (root landing page)
 ├── go.html                 # Visitor advertisement container and progress redirection page
 ├── firestore.rules         # Public visitor click-increment & admin authentication rules
 ├── css/
@@ -87,7 +87,7 @@ git push -u origin main
 - The router in `404.html` extracts the pathname (`abc123`), validates that it is not a system static file, and instantly redirects the user to:
   `https://yourdomain.com/go.html?code=abc123`
 - This ensures clean URLs work out-of-the-box without any custom servers or page reloads!
-- If the visitor accesses the root path (`https://yourdomain.com/`), they are automatically routed to `admin.html` to log in.
+- If the visitor accesses the root path (`https://yourdomain.com/`), it automatically loads the Admin Dashboard (`index.html`) to log in.
 
 ---
 

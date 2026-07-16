@@ -29,7 +29,8 @@ service cloud.firestore {
       // 1. The user is an authenticated admin, OR
       // 2. The visitor is incrementing the click counter (clicks field is the ONLY modified key)
       allow update: if isAdmin() || (
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['clicks'])
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['clicks']) &&
+        request.resource.data.clicks == (resource.data.clicks) + 1
       );
     }
   }
