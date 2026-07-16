@@ -8,6 +8,7 @@ AdLinker is a production-ready, fully static, serverless URL shortener applicati
 ├── 404.html                # Routing middleware for clean URLs on GitHub Pages
 ├── index.html              # Administrator dashboard & login (root landing page)
 ├── go.html                 # Visitor advertisement container and progress redirection page
+├── sw.js                   # Service Worker for ad networks (Push Notifications / Ads)
 ├── firestore.rules         # Public visitor click-increment & admin authentication rules
 ├── css/
 │   └── style.css           # Premium dark-theme glassmorphism CSS stylesheets
