@@ -3,14 +3,18 @@ import { db } from "./firebase-config.js";
 import { 
   doc, 
   getDoc, 
+  setDoc,
   updateDoc, 
-  increment 
+  increment,
+  addDoc,
+  collection
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // DOM Elements
-const loadingView = document.getElementById("loadingView");
+const skeletonView = document.getElementById("skeletonView");
 const countdownView = document.getElementById("countdownView");
 const errorView = document.getElementById("errorView");
+const missingLinkView = document.getElementById("missingLinkView");
 
 const pageTitleDisplay = document.getElementById("pageTitleDisplay");
 const countdownNumber = document.getElementById("countdownNumber");
@@ -18,10 +22,6 @@ const timerCircleProgress = document.getElementById("timerCircleProgress");
 const redirectBtn = document.getElementById("redirectBtn");
 const redirectBtnText = document.getElementById("redirectBtnText");
 
-const adSpaceTop = document.getElementById("adSpaceTop");
-const adSpaceBottom = document.getElementById("adSpaceBottom");
-const adContainerTop = document.getElementById("adContainerTop");
-const adContainerBottom = document.getElementById("adContainerBottom");
 const generalAdScriptWrapper = document.getElementById("generalAdScriptWrapper");
 
 const errorTitle = document.getElementById("errorTitle");
@@ -34,185 +34,280 @@ let countdownInterval = null;
 let destinationUrl = "";
 let autoRedirect = true;
 let customButtonText = "Click to Continue";
+let redirectionStarted = false;
 
 // ----------------------------------------------------
-// 1. Initialization and Data Lookup
+// 1. Initialization and Parallel Data Lookup
 // ----------------------------------------------------
 
 async function initRedirection() {
+  if (redirectionStarted) return;
+  redirectionStarted = true;
+
   // Extract short code from URL parameters
   const urlParams = new URLSearchParams(window.location.search);
   const code = urlParams.get("code") || urlParams.get("c");
   
-  if (!code) {
-    showError("Link Code Missing", "Please provide a valid short link URL parameter.");
-    return;
-  }
-  
-  const sanitizedCode = code.trim().toLowerCase();
-  
+  // Default fallback configurations
+  let settings = {
+    pageTitle: "Short Link Redirection | AdLinker",
+    buttonText: "Click to Continue",
+    countdown: 10,
+    autoRedirect: true,
+    headerAdScript: "",
+    headerAdEnabled: false,
+    bodyAdScript: "",
+    bodyAdEnabled: false,
+    footerAdScript: "",
+    footerAdEnabled: false,
+    customAdScript: "",
+    customAdEnabled: false
+  };
+
   try {
-    // 1. Fetch short link document from Firestore
-    const linkDocRef = doc(db, "links", sanitizedCode);
-    const linkDocSnap = await getDoc(linkDocRef);
+    const configDocRef = doc(db, "settings", "config");
     
-    if (!linkDocSnap.exists()) {
-      showError("Link Not Found", "The link you are trying to access does not exist or has been deleted.");
-      return;
-    }
-    
-    const linkData = linkDocSnap.data();
-    
-    // 2. Validate status
-    if (linkData.status !== true) {
-      showError("Link Inactive", "This short link is currently disabled by the administrator.");
-      return;
-    }
-    destinationUrl = linkData.originalUrl;
-    // Senior QA Check: Ensure original URL has a protocol before routing to prevent relative redirection loops
-    if (destinationUrl && !/^https?:\/\//i.test(destinationUrl)) {
-      destinationUrl = "https://" + destinationUrl;
-    }
-    
-    // 3. Increment click count in Firestore
-    try {
-      await updateDoc(linkDocRef, {
-        clicks: increment(1)
-      });
-    } catch (err) {
-      console.warn("Failed to increment click counter (check Firestore rules):", err);
-    }
-    
-    // 4. Fetch site configuration details
-    let settings = {
-      pageTitle: "Short Link Redirection | AdLinker",
-      buttonText: "Click to Continue",
-      countdown: 10,
-      autoRedirect: true,
-      adScript: ""
-    };
-    
-    try {
-      const configDocRef = doc(db, "settings", "config");
-      const configDocSnap = await getDoc(configDocRef);
-      if (configDocSnap.exists()) {
-        const configData = configDocSnap.data();
-        settings.pageTitle = configData.pageTitle || settings.pageTitle;
-        settings.buttonText = configData.buttonText || settings.buttonText;
-        settings.countdown = configData.countdown || settings.countdown;
-        settings.autoRedirect = configData.autoRedirect !== false; // default true
-        settings.adScript = configData.adScript || "";
+    if (code) {
+      const sanitizedCode = code.trim().toLowerCase();
+      
+      // Start tracking visitor presence
+      trackPresence(sanitizedCode);
+      
+      const linkDocRef = doc(db, "links", sanitizedCode);
+
+      // Fetch short link and global settings configuration in parallel
+      const [linkDocSnap, configDocSnap] = await Promise.all([
+        getDoc(linkDocRef),
+        getDoc(configDocRef)
+      ]);
+      
+      parseSettings(configDocSnap, settings);
+
+      // A. Check if the link exists
+      if (!linkDocSnap.exists()) {
+        await logRedirectFailure(sanitizedCode, "Short code does not exist.");
+        showMissingLinkPage(settings);
+        return;
       }
-    } catch (err) {
-      console.warn("Settings document not accessible, using default fallback parameters.", err);
+      
+      const linkData = linkDocSnap.data();
+      
+      // B. Check link active status
+      if (linkData.status !== true) {
+        await logRedirectFailure(sanitizedCode, "Short link is disabled by administrator.");
+        showMissingLinkPage(settings);
+        return;
+      }
+
+      destinationUrl = linkData.originalUrl;
+      // Ensure original URL has a protocol before routing to prevent relative loops
+      if (destinationUrl && !/^https?:\/\//i.test(destinationUrl)) {
+        destinationUrl = "https://" + destinationUrl;
+      }
+      
+      // C. Increment click count in Firestore (background write)
+      updateDoc(linkDocRef, {
+        clicks: increment(1)
+      }).catch(err => {
+        console.warn("Failed to increment click counter:", err);
+      });
+      
+      // D. Apply config states to DOM
+      document.title = settings.pageTitle;
+      pageTitleDisplay.textContent = settings.pageTitle;
+      customButtonText = settings.buttonText;
+      autoRedirect = settings.autoRedirect;
+      totalTime = settings.countdown;
+      timeLeft = settings.countdown;
+      
+      // E. Lazy load active ad script blocks
+      injectAdScripts(settings, false);
+      
+      // F. Transition UI and Start timer countdown
+      skeletonView.classList.add("hidden");
+      countdownView.classList.remove("hidden");
+      startTimer();
+      
+    } else {
+      // Code parameter missing entirely
+      const configDocSnap = await getDoc(configDocRef);
+      parseSettings(configDocSnap, settings);
+      
+      await logRedirectFailure("none", "Link code parameter is missing in URL.");
+      showMissingLinkPage(settings);
     }
-    
-    // 5. Apply configurations to DOM
-    document.title = settings.pageTitle;
-    pageTitleDisplay.textContent = settings.pageTitle;
-    customButtonText = settings.buttonText;
-    autoRedirect = settings.autoRedirect;
-    totalTime = settings.countdown;
-    timeLeft = settings.countdown;
-    
-    // 6. Inject and execute third-party ad scripts
-    if (settings.adScript) {
-      injectAndRunAdScript(settings.adScript);
-    }
-    
-    // 7. Transition UI and Start timer countdown
-    loadingView.classList.add("hidden");
-    countdownView.classList.remove("hidden");
-    startTimer();
     
   } catch (error) {
     console.error("Redirection boot error:", error);
     showError("Service Interrupted", "An error occurred while loading this link. Please try again later.");
+    const errCode = code ? code.trim().toLowerCase() : "none";
+    logRedirectFailure(errCode, "Redirection system error: " + error.message);
+  }
+}
+
+// Helper to parse settings configurations
+function parseSettings(configDocSnap, settings) {
+  if (configDocSnap && configDocSnap.exists()) {
+    const configData = configDocSnap.data();
+    settings.pageTitle = configData.pageTitle || settings.pageTitle;
+    settings.buttonText = configData.buttonText || settings.buttonText;
+    settings.countdown = configData.countdown || settings.countdown;
+    settings.autoRedirect = configData.autoRedirect !== false;
+    
+    // Load individual ad properties
+    settings.headerAdScript = configData.headerAdScript || "";
+    settings.headerAdEnabled = configData.headerAdEnabled === true;
+    settings.bodyAdScript = configData.bodyAdScript || "";
+    settings.bodyAdEnabled = configData.bodyAdEnabled === true;
+    settings.footerAdScript = configData.footerAdScript || "";
+    settings.footerAdEnabled = configData.footerAdEnabled === true;
+    settings.customAdScript = configData.customAdScript || "";
+    settings.customAdEnabled = configData.customAdEnabled === true;
   }
 }
 
 // ----------------------------------------------------
-// 2. Helper: Display Error
+// 2. UI View Transitions & Errors
 // ----------------------------------------------------
 
 function showError(title, subtitle) {
   errorTitle.textContent = title;
   errorSubtitle.textContent = subtitle;
-  loadingView.classList.add("hidden");
+  skeletonView.classList.add("hidden");
   countdownView.classList.add("hidden");
+  missingLinkView.classList.add("hidden");
   errorView.classList.remove("hidden");
 }
 
+function showMissingLinkPage(settings) {
+  document.title = "Short Link | AdLinker";
+  
+  // Inject and render ads into missingLinkView placeholders
+  injectAdScripts(settings, true);
+  
+  // Transition UI
+  skeletonView.classList.add("hidden");
+  countdownView.classList.add("hidden");
+  errorView.classList.add("hidden");
+  missingLinkView.classList.remove("hidden");
+}
+
 // ----------------------------------------------------
-// 3. Ad Scripts Execution Engine
+// 3. Ad Script Execution Helper
 // ----------------------------------------------------
 
-function injectAndRunAdScript(adScriptHtml) {
-  if (!adScriptHtml) return;
+function injectAdScripts(settings, isMissingPage) {
+  const suffix = isMissingPage ? "missing" : "ad";
+  
+  if (settings.headerAdEnabled && settings.headerAdScript) {
+    injectSingleAd(settings.headerAdScript, `${suffix}ContainerHeader`);
+  }
+  if (settings.bodyAdEnabled && settings.bodyAdScript) {
+    injectSingleAd(settings.bodyAdScript, `${suffix}ContainerBody`);
+  }
+  if (settings.footerAdEnabled && settings.footerAdScript) {
+    injectSingleAd(settings.footerAdScript, `${suffix}ContainerFooter`);
+  }
+  if (settings.customAdEnabled && settings.customAdScript) {
+    injectSingleAd(settings.customAdScript, `${suffix}ContainerExtra`);
+  }
+}
 
+function injectSingleAd(adScriptHtml, containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  
+  // Make parent container space visible
+  const parentSpace = container.parentElement;
+  if (parentSpace) {
+    parentSpace.classList.remove("hidden");
+  }
+  
   try {
-    // Show structural elements
-    adSpaceTop.classList.remove("hidden");
-    adSpaceBottom.classList.remove("hidden");
-    
-    // Parse HTML string in memory
     const parser = new DOMParser();
     const docParsed = parser.parseFromString(adScriptHtml, "text/html");
     
-    // Move layout nodes (banners, text) to target locations
-    const nodes = Array.from(docParsed.body.childNodes);
-    nodes.forEach(node => {
+    // Copy visual layout elements
+    Array.from(docParsed.body.childNodes).forEach(node => {
       if (node.nodeType === Node.ELEMENT_NODE && node.tagName !== "SCRIPT") {
-        adContainerTop.appendChild(node.cloneNode(true));
-        adContainerBottom.appendChild(node.cloneNode(true));
+        container.appendChild(node.cloneNode(true));
       } else if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
-        // Handle plain texts
-        const textNodeTop = document.createTextNode(node.textContent);
-        const textNodeBottom = document.createTextNode(node.textContent);
-        adContainerTop.appendChild(textNodeTop);
-        adContainerBottom.appendChild(textNodeBottom);
+        container.appendChild(document.createTextNode(node.textContent));
       }
     });
-
-    // Execute scripts dynamically
-    const scripts = Array.from(docParsed.querySelectorAll("script"));
-    scripts.forEach(oldScript => {
+    
+    // Inject scripts to execute in general execution context
+    Array.from(docParsed.querySelectorAll("script")).forEach(oldScript => {
       const newScript = document.createElement("script");
-      
-      // Copy all script attributes
       Array.from(oldScript.attributes).forEach(attr => {
         newScript.setAttribute(attr.name, attr.value);
       });
-      
-      // Copy inline script contents
       newScript.textContent = oldScript.textContent;
-      
-      // Add to wrapper to trigger load/execution
       generalAdScriptWrapper.appendChild(newScript);
     });
   } catch (err) {
-    console.error("Ad scripts rendering failed:", err);
+    console.error(`Ad scripts rendering failed inside #${containerId}:`, err);
   }
 }
 
 // ----------------------------------------------------
-// 4. Circular Countdown Timer Logic
+// 4. Presence Tracking (Updates database status)
+// ----------------------------------------------------
+
+function trackPresence(code) {
+  let sessionId = sessionStorage.getItem("presence_session");
+  if (!sessionId) {
+    sessionId = "session_" + Math.random().toString(36).substring(2, 15);
+    sessionStorage.setItem("presence_session", sessionId);
+  }
+  
+  const presenceRef = doc(db, "presence", sessionId);
+  const registerStatus = async () => {
+    try {
+      await setDoc(presenceRef, {
+        lastActive: Date.now(),
+        type: "visitor",
+        code: code || ""
+      });
+    } catch (err) {
+      console.warn("Presence registration failed:", err);
+    }
+  };
+  
+  registerStatus();
+  setInterval(registerStatus, 20000);
+}
+
+// ----------------------------------------------------
+// 5. Log Redirection Errors to Notifications Center
+// ----------------------------------------------------
+
+async function logRedirectFailure(code, reason) {
+  try {
+    await addDoc(collection(db, "notifications"), {
+      type: "error",
+      category: "failed_redirect",
+      message: `Failed redirect for /${code}: ${reason}`,
+      timestamp: Date.now(),
+      read: false
+    });
+  } catch (err) {
+    console.warn("Failed to write failure notification to Firebase:", err);
+  }
+}
+
+// ----------------------------------------------------
+// 6. Circular Countdown Timer Logic
 // ----------------------------------------------------
 
 function startTimer() {
   countdownNumber.textContent = timeLeft;
-  
-  // Reset dashoffset progress bar (starts at full outline)
   timerCircleProgress.style.strokeDashoffset = "0";
   
   countdownInterval = setInterval(() => {
     timeLeft--;
-    
-    // Update numerical value
     countdownNumber.textContent = timeLeft >= 0 ? timeLeft : 0;
     
-    // Update SVG Circular progression
-    // dasharray total = 440 (2 * PI * r)
     const progressOffset = 440 - (440 * (timeLeft / totalTime));
     timerCircleProgress.style.strokeDashoffset = Math.min(Math.max(progressOffset, 0), 440);
     
@@ -224,20 +319,17 @@ function startTimer() {
 }
 
 function handleTimerComplete() {
-  // Update button visual states
   redirectBtn.removeAttribute("disabled");
   redirectBtnText.textContent = customButtonText;
   
-  // Attach user click trigger
   redirectBtn.addEventListener("click", () => {
     window.location.href = destinationUrl;
   });
 
-  // Automatically trigger redirection if enabled
   if (autoRedirect) {
     setTimeout(() => {
       window.location.replace(destinationUrl);
-    }, 500); // Small visual buffer to show 0 before leaving
+    }, 500);
   }
 }
 

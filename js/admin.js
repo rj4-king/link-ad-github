@@ -10,11 +10,15 @@ import {
   doc, 
   setDoc, 
   getDoc, 
+  getDocs,
   updateDoc, 
   deleteDoc, 
+  addDoc,
   onSnapshot, 
   query, 
-  orderBy
+  orderBy,
+  where,
+  limit
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // DOM Elements - Auth Screen
@@ -33,10 +37,14 @@ const logoutBtn = document.getElementById("logoutBtn");
 const statTotalLinks = document.getElementById("statTotalLinks");
 const statTotalClicks = document.getElementById("statTotalClicks");
 const statActiveLinks = document.getElementById("statActiveLinks");
+const statLiveVisitors = document.getElementById("statLiveVisitors");
+const statActiveUsers = document.getElementById("statActiveUsers");
 
 // DOM Elements - Create Link Form
 const createLinkForm = document.getElementById("createLinkForm");
 const originalUrlInput = document.getElementById("originalUrlInput");
+const linkTitleInput = document.getElementById("linkTitleInput");
+const titleLoadingSpinner = document.getElementById("titleLoadingSpinner");
 const customCodeInput = document.getElementById("customCodeInput");
 const generateCodeBtn = document.getElementById("generateCodeBtn");
 const createLinkSubmitBtn = document.getElementById("createLinkSubmitBtn");
@@ -48,20 +56,37 @@ const copyResultBtn = document.getElementById("copyResultBtn");
 const searchInput = document.getElementById("searchInput");
 const linksTableBody = document.getElementById("linksTableBody");
 
-// DOM Elements - Settings
+// DOM Elements - General Settings
 const settingsForm = document.getElementById("settingsForm");
 const settingPageTitle = document.getElementById("settingPageTitle");
 const settingButtonText = document.getElementById("settingButtonText");
 const settingCountdown = document.getElementById("settingCountdown");
 const settingAutoRedirect = document.getElementById("settingAutoRedirect");
-const settingAdScript = document.getElementById("settingAdScript");
 const saveSettingsBtn = document.getElementById("saveSettingsBtn");
+
+// DOM Elements - Advanced Ad Script Sections
+const settingHeaderAdScript = document.getElementById("settingHeaderAdScript");
+const settingHeaderAdEnabled = document.getElementById("settingHeaderAdEnabled");
+const saveHeaderAdBtn = document.getElementById("saveHeaderAdBtn");
+
+const settingBodyAdScript = document.getElementById("settingBodyAdScript");
+const settingBodyAdEnabled = document.getElementById("settingBodyAdEnabled");
+const saveBodyAdBtn = document.getElementById("saveBodyAdBtn");
+
+const settingFooterAdScript = document.getElementById("settingFooterAdScript");
+const settingFooterAdEnabled = document.getElementById("settingFooterAdEnabled");
+const saveFooterAdBtn = document.getElementById("saveFooterAdBtn");
+
+const settingCustomAdScript = document.getElementById("settingCustomAdScript");
+const settingCustomAdEnabled = document.getElementById("settingCustomAdEnabled");
+const saveCustomAdBtn = document.getElementById("saveCustomAdBtn");
 
 // DOM Elements - Modals
 const editModal = document.getElementById("editModal");
 const editLinkForm = document.getElementById("editLinkForm");
 const editLinkId = document.getElementById("editLinkId");
 const editLinkCode = document.getElementById("editLinkCode");
+const editLinkTitle = document.getElementById("editLinkTitle");
 const editLinkUrl = document.getElementById("editLinkUrl");
 const editLinkStatus = document.getElementById("editLinkStatus");
 const closeEditModalBtn = document.getElementById("closeEditModalBtn");
@@ -73,12 +98,25 @@ const deleteLinkId = document.getElementById("deleteLinkId");
 const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
 const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
 
+// DOM Elements - Notifications Center
+const notificationBellBtn = document.getElementById("notificationBellBtn");
+const notificationBadge = document.getElementById("notificationBadge");
+const notificationPanel = document.getElementById("notificationPanel");
+const closeNotificationPanelBtn = document.getElementById("closeNotificationPanelBtn");
+const clearAllNotificationsBtn = document.getElementById("clearAllNotificationsBtn");
+const notificationList = document.getElementById("notificationList");
+
 // DOM Elements - Toast Container
 const toastContainer = document.getElementById("toastContainer");
 
 // Global states
 let linksCache = [];
+let loadedNotifications = [];
 let unsubscribeLinks = null;
+let unsubscribeNotifications = null;
+let unsubscribePresence = null;
+let presenceInterval = null;
+let hasLoggedLogin = false;
 
 // Helper: Toast Notifications
 function showToast(message, type = "info") {
@@ -95,7 +133,6 @@ function showToast(message, type = "info") {
   
   toastContainer.appendChild(toast);
   
-  // Auto remove toast after 3.5 seconds
   setTimeout(() => {
     toast.style.opacity = "0";
     toast.style.transform = "translateX(50px)";
@@ -104,14 +141,14 @@ function showToast(message, type = "info") {
   }, 3500);
 }
 
-// Helper: Construct short URL base path dynamically to support root paths or subfolder scopes (e.g. GitHub Pages repo folders)
+// Helper: Construct short URL base path dynamically
 function getShortBaseUrl() {
   const loc = window.location;
   let path = loc.pathname;
   if (path.endsWith("admin.html")) {
-    path = path.slice(0, -10); // Remove "admin.html"
+    path = path.slice(0, -10);
   } else if (path.endsWith("index.html")) {
-    path = path.slice(0, -10); // Remove "index.html"
+    path = path.slice(0, -10);
   }
   if (!path.endsWith("/")) {
     path += "/";
@@ -140,30 +177,53 @@ onAuthStateChanged(auth, (user) => {
     dashboardScreen.style.display = "block";
     userEmailDisplay.textContent = user.email;
     
+    // Log user login activity (once per session)
+    if (!hasLoggedLogin && !sessionStorage.getItem("admin_login_logged")) {
+      logActivity("info", `Admin logged in successfully: ${user.email}`);
+      sessionStorage.setItem("admin_login_logged", "true");
+      hasLoggedLogin = true;
+    }
+
     // Bind Realtime listeners
     bindRealtimeLinks();
+    bindNotifications();
+    bindPresenceTracking();
     fetchSettings();
+    
+    // Run self-cleanup on old presence records
+    cleanupPresenceRecords();
   } else {
     // Unauthenticated state
     authScreen.style.display = "flex";
     dashboardScreen.style.display = "none";
     
-    // Clear dynamic listeners
+    // Clear dynamic listeners & intervals
     if (unsubscribeLinks) {
       unsubscribeLinks();
       unsubscribeLinks = null;
     }
+    if (unsubscribeNotifications) {
+      unsubscribeNotifications();
+      unsubscribeNotifications = null;
+    }
+    if (unsubscribePresence) {
+      unsubscribePresence();
+      unsubscribePresence = null;
+    }
+    if (presenceInterval) {
+      clearInterval(presenceInterval);
+      presenceInterval = null;
+    }
+    hasLoggedLogin = false;
   }
 });
 
 // Login Form Submit Handler
 loginForm.addEventListener("submit", async (e) => {
   e.preventDefault();
-  
   const email = loginEmail.value.trim();
   const password = loginPassword.value;
   
-  // Set Loading
   loginSubmitBtn.disabled = true;
   loginSubmitBtn.innerHTML = `<div class="spinner"></div> <span>Verifying...</span>`;
   
@@ -176,8 +236,8 @@ loginForm.addEventListener("submit", async (e) => {
     if (error.code === "auth/user-not-found") errorMsg = "No account found with this email.";
     if (error.code === "auth/wrong-password") errorMsg = "Incorrect password.";
     showToast(errorMsg, "error");
+    logActivity("error", `Failed login attempt for email: ${email}. Reason: ${error.message}`);
   } finally {
-    // Reset Loading State
     loginSubmitBtn.disabled = false;
     loginSubmitBtn.innerHTML = `<span>Sign In</span>`;
   }
@@ -186,6 +246,8 @@ loginForm.addEventListener("submit", async (e) => {
 // Logout Button Click Handler
 logoutBtn.addEventListener("click", async () => {
   try {
+    logActivity("info", "Admin initiated sign out.");
+    sessionStorage.removeItem("admin_login_logged");
     await signOut(auth);
     showToast("Signed out successfully.", "info");
     linkResultBox.classList.add("hidden");
@@ -209,7 +271,6 @@ function bindRealtimeLinks() {
     
     snapshot.forEach((doc) => {
       const data = doc.data();
-      // Ensure we preserve id (which is the short code)
       linksCache.push({
         id: doc.id,
         ...data
@@ -218,16 +279,15 @@ function bindRealtimeLinks() {
       if (data.status) activeCount++;
     });
     
-    // Update Stats panel
     statTotalLinks.textContent = linksCache.length;
     statTotalClicks.textContent = totalClicks;
     statActiveLinks.textContent = activeCount;
     
-    // Render links
     renderLinksTable(linksCache);
   }, (error) => {
     console.error("Firestore links fetch failed:", error);
     showToast("Failed to fetch links. Check security rules.", "error");
+    logActivity("error", "Database link query failed: " + error.message);
   });
 }
 
@@ -235,10 +295,11 @@ function bindRealtimeLinks() {
 function renderLinksTable(links) {
   const queryText = searchInput.value.toLowerCase().trim();
   
-  // Filter links if search query exists
   const filteredLinks = links.filter(link => {
+    const titleMatch = link.title ? link.title.toLowerCase().includes(queryText) : false;
     return link.id.toLowerCase().includes(queryText) || 
-           link.originalUrl.toLowerCase().includes(queryText);
+           link.originalUrl.toLowerCase().includes(queryText) ||
+           titleMatch;
   });
   
   if (filteredLinks.length === 0) {
@@ -271,7 +332,10 @@ function renderLinksTable(links) {
           </div>
         </td>
         <td>
-          <div class="link-original" title="${link.originalUrl}">${escapeHTML(link.originalUrl)}</div>
+          <div class="link-details" style="display: flex; flex-direction: column;">
+            <span class="link-title-text font-weight-600 text-primary" style="font-size: 0.95rem; font-weight: 500;">${escapeHTML(link.title || 'Untitled Link')}</span>
+            <div class="link-original" title="${link.originalUrl}">${escapeHTML(link.originalUrl)}</div>
+          </div>
         </td>
         <td class="text-center text-secondary" style="font-size: 0.85rem; white-space: nowrap;">${createdDate}</td>
         <td class="text-center font-weight-600">${link.clicks || 0}</td>
@@ -283,7 +347,7 @@ function renderLinksTable(links) {
         </td>
         <td class="text-right">
           <div class="flex gap-2" style="justify-content: flex-end;">
-            <button class="btn-icon-only edit-link-btn" data-id="${link.id}" data-url="${link.originalUrl}" data-status="${link.status}" title="Edit destination URL">
+            <button class="btn-icon-only edit-link-btn" data-id="${link.id}" data-url="${link.originalUrl}" data-title="${escapeHTML(link.title || '')}" data-status="${link.status}" title="Edit link settings">
               <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
             <button class="btn-icon-only delete-btn delete-link-btn" data-id="${link.id}" title="Delete link">
@@ -295,13 +359,11 @@ function renderLinksTable(links) {
     `;
   }).join("");
   
-  // Attach Event Listeners to rendered elements
   attachTableEventListeners();
 }
 
 // Bind events in Table (copy, toggle status, edit click, delete click)
 function attachTableEventListeners() {
-  // 1. Copy Short URL
   document.querySelectorAll(".copy-link-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const url = btn.getAttribute("data-url");
@@ -313,7 +375,6 @@ function attachTableEventListeners() {
     });
   });
 
-  // 2. Toggle status switch
   document.querySelectorAll(".toggle-status-checkbox").forEach(checkbox => {
     checkbox.addEventListener("change", async () => {
       const id = checkbox.getAttribute("data-id");
@@ -323,24 +384,25 @@ function attachTableEventListeners() {
         const docRef = doc(db, "links", id);
         await updateDoc(docRef, { status: newStatus });
         showToast(`Link "${id}" has been ${newStatus ? 'enabled' : 'disabled'}.`, "info");
+        logActivity("info", `Link '/${id}' status changed to ${newStatus ? 'Active' : 'Inactive'}.`);
       } catch (err) {
         console.error("Status toggle error:", err);
         showToast("Error updating link status.", "error");
-        // Revert UI check state on failure
         checkbox.checked = !newStatus;
       }
     });
   });
 
-  // 3. Edit Link Modal trigger
   document.querySelectorAll(".edit-link-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const id = btn.getAttribute("data-id");
       const url = btn.getAttribute("data-url");
+      const title = btn.getAttribute("data-title");
       const status = btn.getAttribute("data-status") === "true";
       
       editLinkId.value = id;
       editLinkCode.value = id;
+      editLinkTitle.value = title;
       editLinkUrl.value = url;
       editLinkStatus.checked = status;
       
@@ -348,7 +410,6 @@ function attachTableEventListeners() {
     });
   });
 
-  // 4. Delete Confirmation trigger
   document.querySelectorAll(".delete-link-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const id = btn.getAttribute("data-id");
@@ -359,12 +420,10 @@ function attachTableEventListeners() {
   });
 }
 
-// Search input keyup listener
 searchInput.addEventListener("input", () => {
   renderLinksTable(linksCache);
 });
 
-// Helper: Escape HTML content to prevent XSS
 function escapeHTML(str) {
   return str.replace(/[&<>'"]/g, 
     tag => ({
@@ -378,19 +437,63 @@ function escapeHTML(str) {
 }
 
 // ----------------------------------------------------
-// 3. Link Creation Handler
+// 3. Link Creation Handler & Webpage Title Fetching
 // ----------------------------------------------------
 
-// Custom code input: restrict input characters
+// Debounce Helper
+function debounce(func, wait) {
+  let timeout;
+  return function(...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), wait);
+  };
+}
+
+// Monitor Paste or blur on Original URL input to automatically resolve webpage title
+const handleUrlInput = async () => {
+  const url = originalUrlInput.value.trim();
+  if (!url) return;
+  if (!url.startsWith("http://") && !url.startsWith("https://")) return;
+  
+  // If title is already typed by user, do not override
+  if (linkTitleInput.value.trim()) return;
+
+  titleLoadingSpinner.classList.remove("hidden");
+  
+  try {
+    // Utilize public CORS proxy
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+    const res = await fetch(proxyUrl);
+    if (!res.ok) throw new Error("CORS Proxy retrieval error");
+    
+    const data = await res.json();
+    if (data.contents) {
+      const parser = new DOMParser();
+      const docParsed = parser.parseFromString(data.contents, "text/html");
+      const title = docParsed.title || docParsed.querySelector("title")?.textContent || "";
+      
+      if (title.trim()) {
+        linkTitleInput.value = title.trim();
+        showToast("Webpage title resolved automatically!", "success");
+      }
+    }
+  } catch (err) {
+    console.warn("Failed to automatically query webpage metadata:", err);
+  } finally {
+    titleLoadingSpinner.classList.add("hidden");
+  }
+};
+
+originalUrlInput.addEventListener("blur", handleUrlInput);
+originalUrlInput.addEventListener("input", debounce(handleUrlInput, 1200));
+
 customCodeInput.addEventListener("keypress", (e) => {
-  // Allow only alphanumeric, dash and underscore
   const char = String.fromCharCode(e.which);
   if (!/^[a-zA-Z0-9-_]+$/.test(char)) {
     e.preventDefault();
   }
 });
 
-// Auto Generate Code Button Click
 generateCodeBtn.addEventListener("click", () => {
   customCodeInput.value = generateRandomCode();
 });
@@ -400,9 +503,9 @@ createLinkForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   
   const originalUrl = originalUrlInput.value.trim();
+  const title = linkTitleInput.value.trim();
   let code = customCodeInput.value.trim().toLowerCase();
   
-  // Client-side validations
   if (!originalUrl.startsWith("http://") && !originalUrl.startsWith("https://")) {
     showToast("Please enter a valid HTTP or HTTPS destination URL.", "warning");
     return;
@@ -412,7 +515,6 @@ createLinkForm.addEventListener("submit", async (e) => {
   createLinkSubmitBtn.innerHTML = `<div class="spinner"></div> <span>Generating Link...</span>`;
   
   try {
-    // If code is empty, generate a unique random one
     if (!code) {
       let isUnique = false;
       let iterations = 0;
@@ -429,7 +531,6 @@ createLinkForm.addEventListener("submit", async (e) => {
         throw new Error("Could not generate a unique short code. Try again.");
       }
     } else {
-      // Validate that custom code does not exist in DB already
       const docRef = doc(db, "links", code);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
@@ -440,25 +541,24 @@ createLinkForm.addEventListener("submit", async (e) => {
       }
     }
     
-    // Save to Firestore links collection with docId = code
+    // Save link object
     const docRef = doc(db, "links", code);
     await setDoc(docRef, {
       code: code,
+      title: title || `Short link for ${code}`,
       originalUrl: originalUrl,
-      createdAt: new Date().toISOString(), // Use ISOString to make querying or sorting simple
+      createdAt: new Date().toISOString(),
       clicks: 0,
       status: true
     });
     
-    // Show success results box
     const shortUrl = getShortBaseUrl() + code;
     resultShortUrl.value = shortUrl;
     linkResultBox.classList.remove("hidden");
     
-    // Reset Form
     createLinkForm.reset();
     showToast("Shortened URL created successfully!", "success");
-    
+    logActivity("success", `Created short link: /${code} -> '${originalUrl}' (Title: '${title || 'None'}')`);
   } catch (error) {
     console.error("Create link error:", error);
     showToast(error.message || "Failed to create short link.", "error");
@@ -468,7 +568,6 @@ createLinkForm.addEventListener("submit", async (e) => {
   }
 });
 
-// Copy newly generated short URL
 copyResultBtn.addEventListener("click", () => {
   const url = resultShortUrl.value;
   navigator.clipboard.writeText(url).then(() => {
@@ -482,7 +581,6 @@ copyResultBtn.addEventListener("click", () => {
 // 4. Modals Management Flow
 // ----------------------------------------------------
 
-// Close Edit Modal
 function closeEditModal() {
   editModal.classList.remove("active");
   editLinkForm.reset();
@@ -491,7 +589,6 @@ function closeEditModal() {
 closeEditModalBtn.addEventListener("click", closeEditModal);
 cancelEditBtn.addEventListener("click", closeEditModal);
 
-// Close Delete Modal
 function closeDeleteModal() {
   deleteModal.classList.remove("active");
   deleteLinkId.value = "";
@@ -505,6 +602,7 @@ editLinkForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   
   const id = editLinkId.value;
+  const newTitle = editLinkTitle.value.trim();
   const newUrl = editLinkUrl.value.trim();
   const newStatus = editLinkStatus.checked;
   
@@ -520,11 +618,13 @@ editLinkForm.addEventListener("submit", async (e) => {
   try {
     const docRef = doc(db, "links", id);
     await updateDoc(docRef, {
+      title: newTitle || `Short link for ${id}`,
       originalUrl: newUrl,
       status: newStatus
     });
     
     showToast("Short link updated successfully!", "success");
+    logActivity("info", `Updated short link settings for /${id}: Title: '${newTitle}', URL: '${newUrl}', Active: ${newStatus}`);
     closeEditModal();
   } catch (err) {
     console.error("Update link error:", err);
@@ -548,6 +648,7 @@ confirmDeleteBtn.addEventListener("click", async () => {
     await deleteDoc(docRef);
     
     showToast("Link deleted successfully.", "success");
+    logActivity("warning", `Permanently deleted short link: /${id}`);
     closeDeleteModal();
   } catch (err) {
     console.error("Delete link error:", err);
@@ -558,7 +659,6 @@ confirmDeleteBtn.addEventListener("click", async () => {
   }
 });
 
-// Close modals when clicking overlay wrapper
 window.addEventListener("click", (e) => {
   if (e.target === editModal) closeEditModal();
   if (e.target === deleteModal) closeDeleteModal();
@@ -579,21 +679,36 @@ async function fetchSettings() {
       settingButtonText.value = data.buttonText || "Click to Continue";
       settingCountdown.value = data.countdown || 10;
       settingAutoRedirect.checked = data.autoRedirect !== false;
-      settingAdScript.value = data.adScript || "";
+      
+      // Populate script card configuration textareas and toggles
+      settingHeaderAdScript.value = data.headerAdScript || "";
+      settingHeaderAdEnabled.checked = data.headerAdEnabled === true;
+      
+      settingBodyAdScript.value = data.bodyAdScript || "";
+      settingBodyAdEnabled.checked = data.bodyAdEnabled === true;
+      
+      settingFooterAdScript.value = data.footerAdScript || "";
+      settingFooterAdEnabled.checked = data.footerAdEnabled === true;
+      
+      settingCustomAdScript.value = data.customAdScript || "";
+      settingCustomAdEnabled.checked = data.customAdEnabled === true;
     } else {
-      // Setup default configuration inside inputs if nothing exists in Firestore
+      // Default setup
       settingPageTitle.value = "Short Link Redirection | AdLinker";
       settingButtonText.value = "Click to Continue";
       settingCountdown.value = 10;
       settingAutoRedirect.checked = true;
-      settingAdScript.value = "";
+      
+      // Send deployment warning
+      logActivity("warning", "Deployment Configuration missing. Created settings with default configs.");
     }
   } catch (err) {
     console.error("Fetch settings error:", err);
-    showToast("Error loading Settings. Ensure Firestore collections are initialized.", "warning");
+    showToast("Error loading Settings. Ensure Firestore rules are configured.", "warning");
   }
 }
 
+// General config save form submit handler
 settingsForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   
@@ -601,9 +716,7 @@ settingsForm.addEventListener("submit", async (e) => {
   const buttonText = settingButtonText.value.trim();
   const countdown = parseInt(settingCountdown.value);
   const autoRedirect = settingAutoRedirect.checked;
-  const adScript = settingAdScript.value;
   
-  // Timer bounds validation
   if (countdown < 5 || countdown > 60) {
     showToast("Timer must be between 5 and 60 seconds.", "warning");
     return;
@@ -618,16 +731,269 @@ settingsForm.addEventListener("submit", async (e) => {
       pageTitle,
       buttonText,
       countdown,
-      autoRedirect,
-      adScript
-    });
+      autoRedirect
+    }, { merge: true });
     
     showToast("Configuration saved successfully!", "success");
+    logActivity("success", "Updated General settings configurations (Page Title, Button, Countdown).");
   } catch (err) {
     console.error("Save settings error:", err);
     showToast("Failed to save settings configurations.", "error");
   } finally {
     saveSettingsBtn.disabled = false;
-    saveSettingsBtn.innerHTML = `<span>Save Settings</span>`;
+    saveSettingsBtn.innerHTML = `<span>Save General Configs</span>`;
+  }
+});
+
+// Reusable individual ad settings saver
+async function saveSingleAdConfig(type, fields) {
+  const btn = document.getElementById(`save${type}AdBtn`);
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<div class="spinner" style="width: 1rem; height: 1rem;"></div> Saving...`;
+  
+  try {
+    const docRef = doc(db, "settings", "config");
+    await setDoc(docRef, fields, { merge: true });
+    showToast(`${type} Ad configuration saved!`, "success");
+    logActivity("success", `Saved advanced settings for ${type} Ad script.`);
+  } catch (err) {
+    console.error(`Save ${type} ad error:`, err);
+    showToast(`Failed to update ${type} ad.`, "error");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }
+}
+
+// Header ad script click save listener
+saveHeaderAdBtn.addEventListener("click", () => {
+  saveSingleAdConfig("Header", {
+    headerAdScript: settingHeaderAdScript.value,
+    headerAdEnabled: settingHeaderAdEnabled.checked
+  });
+});
+
+// Body ad script click save listener
+saveBodyAdBtn.addEventListener("click", () => {
+  saveSingleAdConfig("Body", {
+    bodyAdScript: settingBodyAdScript.value,
+    bodyAdEnabled: settingBodyAdEnabled.checked
+  });
+});
+
+// Footer ad script click save listener
+saveFooterAdBtn.addEventListener("click", () => {
+  saveSingleAdConfig("Footer", {
+    footerAdScript: settingFooterAdScript.value,
+    footerAdEnabled: settingFooterAdEnabled.checked
+  });
+});
+
+// Custom/Extra ad script click save listener
+saveCustomAdBtn.addEventListener("click", () => {
+  saveSingleAdConfig("Custom", {
+    customAdScript: settingCustomAdScript.value,
+    customAdEnabled: settingCustomAdEnabled.checked
+  });
+});
+
+// ----------------------------------------------------
+// 6. Presence Tracking & Analytics Status (Live Metrics)
+// ----------------------------------------------------
+
+function bindPresenceTracking() {
+  let sessionId = sessionStorage.getItem("presence_session");
+  if (!sessionId) {
+    sessionId = "session_" + Math.random().toString(36).substring(2, 15);
+    sessionStorage.setItem("presence_session", sessionId);
+  }
+  
+  const presenceRef = doc(db, "presence", sessionId);
+  const reportPresence = async () => {
+    try {
+      await setDoc(presenceRef, {
+        lastActive: Date.now(),
+        type: "admin"
+      });
+    } catch (err) {
+      console.warn("Failed reporting admin active status:", err);
+    }
+  };
+
+  reportPresence();
+  presenceInterval = setInterval(reportPresence, 20000);
+
+  // Monitor total live presence elements from Firestore query
+  const presenceCollection = collection(db, "presence");
+  
+  unsubscribePresence = onSnapshot(presenceCollection, (snapshot) => {
+    let visitorsCount = 0;
+    let usersCount = 0;
+    const now = Date.now();
+    const threshold = 45000; // 45 seconds timeout threshold
+    
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      if (now - data.lastActive < threshold) {
+        if (data.type === "visitor") {
+          visitorsCount++;
+        } else if (data.type === "admin") {
+          usersCount++;
+        }
+      }
+    });
+    
+    statLiveVisitors.textContent = visitorsCount;
+    statActiveUsers.textContent = usersCount;
+  });
+}
+
+// Auto purge outdated presence records from Firestore
+async function cleanupPresenceRecords() {
+  try {
+    const threshold = Date.now() - 300000; // 5 minutes inactivity
+    const q = query(collection(db, "presence"), where("lastActive", "<", threshold));
+    const snaps = await getDocs(q);
+    
+    snaps.forEach(async (d) => {
+      try {
+        await deleteDoc(doc(db, "presence", d.id));
+      } catch (err) {}
+    });
+  } catch (err) {
+    console.warn("Presence cleanup task skip:", err);
+  }
+}
+
+// ----------------------------------------------------
+// 7. Notification Center Drawer Real-time Logic
+// ----------------------------------------------------
+
+function bindNotifications() {
+  const q = query(
+    collection(db, "notifications"), 
+    orderBy("timestamp", "desc"),
+    limit(50)
+  );
+
+  unsubscribeNotifications = onSnapshot(q, (snapshot) => {
+    loadedNotifications = [];
+    let unreadCount = 0;
+    
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      loadedNotifications.push({
+        id: docSnap.id,
+        ...data
+      });
+      if (data.read === false) unreadCount++;
+    });
+
+    // Update bell unread count badge
+    notificationBadge.textContent = unreadCount;
+    if (unreadCount > 0) {
+      notificationBadge.classList.remove("hidden");
+    } else {
+      notificationBadge.classList.add("hidden");
+    }
+
+    renderNotificationsList();
+  });
+}
+
+// Log admin action to Firestore
+async function logActivity(type, message) {
+  try {
+    await addDoc(collection(db, "notifications"), {
+      type: type,
+      message: message,
+      timestamp: Date.now(),
+      read: false
+    });
+  } catch (err) {
+    console.warn("Failed to write activity logs:", err);
+  }
+}
+
+// Render Notifications Drawer items
+function renderNotificationsList() {
+  if (loadedNotifications.length === 0) {
+    notificationList.innerHTML = `
+      <div class="text-center text-muted" style="padding: 4rem 0; font-size: 0.85rem;">
+        No recent activities or warnings.
+      </div>
+    `;
+    return;
+  }
+
+  notificationList.innerHTML = loadedNotifications.map(item => {
+    const isUnread = item.read === false ? 'unread' : '';
+    const dateText = item.timestamp ? new Date(item.timestamp).toLocaleTimeString(undefined, {hour: '2-digit', minute:'2-digit', second:'2-digit'}) : 'N/A';
+    
+    // Choose emoji for notification types
+    let typeEmoji = "ℹ️";
+    if (item.type === "success") typeEmoji = "✅";
+    if (item.type === "error") typeEmoji = "❌";
+    if (item.type === "warning") typeEmoji = "⚠️";
+
+    return `
+      <div class="notification-item ${isUnread} ${item.type || 'info'}" data-id="${item.id}">
+        <div class="notification-icon">${typeEmoji}</div>
+        <div class="notification-content">
+          <span class="notification-message">${escapeHTML(item.message)}</span>
+          <span class="notification-time">${dateText}</span>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+// Toggle notification panel visibility
+notificationBellBtn.addEventListener("click", async () => {
+  notificationPanel.classList.toggle("active");
+  
+  // Mark all unread elements as read when drawer is opened
+  if (notificationPanel.classList.contains("active")) {
+    const unread = loadedNotifications.filter(n => n.read === false);
+    if (unread.length > 0) {
+      const batchPromise = unread.map(n => 
+        updateDoc(doc(db, "notifications", n.id), { read: true })
+      );
+      await Promise.all(batchPromise);
+    }
+  }
+});
+
+// Close panel click triggers
+closeNotificationPanelBtn.addEventListener("click", () => {
+  notificationPanel.classList.remove("active");
+});
+
+// Clear all notifications click
+clearAllNotificationsBtn.addEventListener("click", async () => {
+  if (loadedNotifications.length === 0) return;
+  
+  clearAllNotificationsBtn.disabled = true;
+  clearAllNotificationsBtn.textContent = "Clearing...";
+  
+  try {
+    const batchPromises = loadedNotifications.map(n => 
+      deleteDoc(doc(db, "notifications", n.id))
+    );
+    await Promise.all(batchPromises);
+    showToast("Notifications cleared.", "info");
+  } catch (err) {
+    showToast("Error clearing logs.", "error");
+  } finally {
+    clearAllNotificationsBtn.disabled = false;
+    clearAllNotificationsBtn.textContent = "Clear All";
+  }
+});
+
+// Close drawers if clicking outside the container
+window.addEventListener("click", (e) => {
+  if (!notificationPanel.contains(e.target) && !notificationBellContainer.contains(e.target)) {
+    notificationPanel.classList.remove("active");
   }
 });

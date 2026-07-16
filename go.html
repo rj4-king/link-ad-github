@@ -12,24 +12,33 @@
 
   <div class="redirect-container">
     
-    <!-- 1. Loading View (Shown on page entry) -->
-    <div id="loadingView" class="glass-card redirect-card" style="max-width: 440px;">
-      <div class="loading-container">
-        <div class="spinner spinner-lg"></div>
-        <h2>Loading Short Link...</h2>
-        <p class="text-secondary" style="font-size: 0.9rem;">Verifying parameters and preparing destination.</p>
+    <!-- 1. Skeleton Loading View (Shown on page entry) -->
+    <div id="skeletonView" class="glass-card redirect-card skeleton-card">
+      <div class="skeleton-title skeleton-shimmer"></div>
+      <div class="skeleton-subtitle skeleton-shimmer"></div>
+      <div class="skeleton-ad skeleton-shimmer"></div>
+      <div class="skeleton-timer-wrapper">
+        <div class="skeleton-timer skeleton-shimmer"></div>
       </div>
+      <div class="skeleton-btn skeleton-shimmer"></div>
+      <div class="skeleton-ad skeleton-shimmer"></div>
     </div>
 
     <!-- 2. Active Countdown View (Shown when link is valid) -->
     <div id="countdownView" class="glass-card redirect-card hidden">
+      <!-- Header Ad Space -->
+      <div id="adSpaceHeader" class="ad-space hidden">
+        <span class="ad-badge-label">Sponsored Content</span>
+        <div id="adContainerHeader" class="w-full"></div>
+      </div>
+
       <h1 id="pageTitleDisplay" class="redirect-title">Your link is almost ready...</h1>
       <p id="pageSubtitleDisplay" class="redirect-subtitle">Please wait for the timer to unlock the destination URL.</p>
 
-      <!-- Sponsored Ad Space - Top -->
-      <div id="adSpaceTop" class="ad-space hidden">
+      <!-- Body Ad Space -->
+      <div id="adSpaceBody" class="ad-space hidden">
         <span class="ad-badge-label">Sponsored Content</span>
-        <div id="adContainerTop" class="w-full"></div>
+        <div id="adContainerBody" class="w-full"></div>
       </div>
 
       <!-- Circular Timer -->
@@ -56,19 +65,45 @@
         <span id="redirectBtnText">Please Wait...</span>
       </button>
 
-      <!-- Sponsored Ad Space - Bottom -->
-      <div id="adSpaceBottom" class="ad-space hidden">
+      <!-- Footer Ad Space -->
+      <div id="adSpaceFooter" class="ad-space hidden">
         <span class="ad-badge-label">Sponsored Content</span>
-        <div id="adContainerBottom" class="w-full"></div>
+        <div id="adContainerFooter" class="w-full"></div>
+      </div>
+
+      <!-- Custom/Extra Ad Space -->
+      <div id="adSpaceExtra" class="ad-space hidden">
+        <span class="ad-badge-label">Sponsored Content</span>
+        <div id="adContainerExtra" class="w-full"></div>
       </div>
     </div>
 
-    <!-- 3. Error/Not Found View (Shown on error or expired links) -->
+    <!-- 3. Error/Not Found View (Shown on system/connection errors) -->
     <div id="errorView" class="glass-card redirect-card hidden" style="max-width: 440px; padding: 3rem 2rem;">
       <div style="font-size: 3.5rem; margin-bottom: 1.25rem;">⚠️</div>
       <h2 id="errorTitle">Link Not Found</h2>
       <p id="errorSubtitle" class="text-secondary mt-2" style="font-size: 0.95rem;">This short URL may be invalid, disabled, or expired.</p>
       <a href="./index.html" class="btn btn-secondary mt-6 w-full">Go to Admin Dashboard</a>
+    </div>
+
+    <!-- 4. Missing Link View (Shown clean when short link doesn't exist) -->
+    <div id="missingLinkView" class="w-full hidden" style="max-width: 680px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem;">
+      <div id="missingAdSpaceHeader" class="ad-space hidden">
+        <span class="ad-badge-label">Sponsored Content</span>
+        <div id="missingAdContainerHeader" class="w-full"></div>
+      </div>
+      <div id="missingAdSpaceBody" class="ad-space hidden">
+        <span class="ad-badge-label">Sponsored Content</span>
+        <div id="missingAdContainerBody" class="w-full"></div>
+      </div>
+      <div id="missingAdSpaceFooter" class="ad-space hidden">
+        <span class="ad-badge-label">Sponsored Content</span>
+        <div id="missingAdContainerFooter" class="w-full"></div>
+      </div>
+      <div id="missingAdSpaceExtra" class="ad-space hidden">
+        <span class="ad-badge-label">Sponsored Content</span>
+        <div id="missingAdContainerExtra" class="w-full"></div>
+      </div>
     </div>
 
   </div>

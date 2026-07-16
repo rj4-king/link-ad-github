@@ -33,5 +33,21 @@ service cloud.firestore {
         request.resource.data.clicks == (resource.data.clicks) + 1
       );
     }
+
+    // Presence Collection Rules
+    match /presence/{presenceId} {
+      // Anyone can report/update their own active status
+      allow write: if true;
+      // Only admins can see who is online
+      allow read: if isAdmin();
+    }
+
+    // Notifications Collection Rules
+    match /notifications/{notificationId} {
+      // Anyone can log failures or activities (visitor errors, redirect issues)
+      allow create: if true;
+      // Only authenticated admins can view and manage notifications
+      allow read, update, delete: if isAdmin();
+    }
   }
 }
