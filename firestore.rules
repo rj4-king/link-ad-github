@@ -1,0 +1,36 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if the request is from an authenticated user (admin)
+    function isAdmin() {
+      return request.auth != null;
+    }
+
+    // Settings Collection Rules
+    match /settings/{document} {
+      // Anyone can read configuration settings (for loading titles, countdown timers, and ad scripts)
+      allow read: if true;
+      
+      // Only authenticated admins can write/modify settings config
+      allow write: if isAdmin();
+    }
+
+    // Links Collection Rules
+    match /links/{linkId} {
+      // Anyone can look up a short link document (to resolve the redirection destination)
+      allow read: if true;
+      
+      // Only authenticated admins can create or delete short links
+      allow create, delete: if isAdmin();
+      
+      // Allow updates if:
+      // 1. The user is an authenticated admin, OR
+      // 2. The visitor is incrementing the click counter (clicks field is the ONLY modified key)
+      allow update: if isAdmin() || (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['clicks'])
+      );
+    }
+  }
+}

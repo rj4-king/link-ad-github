@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Short Link Redirection | AdLinker</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Ambient Gradient background -->
+  <div class="bg-gradient-mesh"></div>
+
+  <div class="redirect-container">
+    
+    <!-- 1. Loading View (Shown on page entry) -->
+    <div id="loadingView" class="glass-card redirect-card" style="max-width: 440px;">
+      <div class="loading-container">
+        <div class="spinner spinner-lg"></div>
+        <h2>Loading Short Link...</h2>
+        <p class="text-secondary" style="font-size: 0.9rem;">Verifying parameters and preparing destination.</p>
+      </div>
+    </div>
+
+    <!-- 2. Active Countdown View (Shown when link is valid) -->
+    <div id="countdownView" class="glass-card redirect-card hidden">
+      <h1 id="pageTitleDisplay" class="redirect-title">Your link is almost ready...</h1>
+      <p id="pageSubtitleDisplay" class="redirect-subtitle">Please wait for the timer to unlock the destination URL.</p>
+
+      <!-- Sponsored Ad Space - Top -->
+      <div id="adSpaceTop" class="ad-space hidden">
+        <span class="ad-badge-label">Sponsored Content</span>
+        <div id="adContainerTop" class="w-full"></div>
+      </div>
+
+      <!-- Circular Timer -->
+      <div id="timerWrapper" class="timer-container">
+        <svg class="timer-svg" viewBox="0 0 160 160">
+          <defs>
+            <linearGradient id="timerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="var(--color-primary)" />
+              <stop offset="100%" stop-color="var(--color-secondary)" />
+            </linearGradient>
+          </defs>
+          <circle class="timer-circle-bg" cx="80" cy="80" r="70"></circle>
+          <circle id="timerCircleProgress" class="timer-circle-progress" cx="80" cy="80" r="70"></circle>
+        </svg>
+        <div class="timer-text">
+          <span id="countdownNumber">--</span>
+          <span class="timer-unit">secs</span>
+        </div>
+      </div>
+
+      <!-- Action Redirect Button -->
+      <button id="redirectBtn" class="btn btn-primary btn-block" disabled style="padding: 1rem 1.5rem; font-size: 1.1rem; border-radius: 0.75rem;">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg>
+        <span id="redirectBtnText">Please Wait...</span>
+      </button>
+
+      <!-- Sponsored Ad Space - Bottom -->
+      <div id="adSpaceBottom" class="ad-space hidden">
+        <span class="ad-badge-label">Sponsored Content</span>
+        <div id="adContainerBottom" class="w-full"></div>
+      </div>
+    </div>
+
+    <!-- 3. Error/Not Found View (Shown on error or expired links) -->
+    <div id="errorView" class="glass-card redirect-card hidden" style="max-width: 440px; padding: 3rem 2rem;">
+      <div style="font-size: 3.5rem; margin-bottom: 1.25rem;">⚠️</div>
+      <h2 id="errorTitle">Link Not Found</h2>
+      <p id="errorSubtitle" class="text-secondary mt-2" style="font-size: 0.95rem;">This short URL may be invalid, disabled, or expired.</p>
+      <a href="/admin.html" class="btn btn-secondary mt-6 w-full">Go to Admin Dashboard</a>
+    </div>
+
+  </div>
+
+  <!-- Ad Script general execution wrapper (for scripts that execute in window/document level context) -->
+  <div id="generalAdScriptWrapper" style="display:none;"></div>
+
+  <!-- Redirection JavaScript Logic -->
+  <script type="module" src="js/go.js"></script>
+</body>
+</html>

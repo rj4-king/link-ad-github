@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redirecting...</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="bg-gradient-mesh"></div>
+  
+  <div class="redirect-container">
+    <div class="glass-card redirect-card" style="max-width: 400px; padding: 2.5rem 1.5rem;">
+      <div class="spinner spinner-lg"></div>
+      <h2 class="mt-6" style="font-size: 1.5rem;">Redirecting...</h2>
+      <p class="text-secondary mt-2" style="font-size: 0.9rem;">Please wait while we route your request.</p>
+    </div>
+  </div>
+
+  <script>
+    // GitHub Pages Custom Clean URL Router supporting Subfolders
+    (function() {
+      const pathname = window.location.pathname;
+
+      // 1. Detect if root path (ends with slash, or is empty, or is index.html)
+      if (pathname === '/' || pathname.endsWith('/') || pathname.endsWith('/index.html')) {
+        // Construct path to admin.html in the same directory context
+        const base = pathname.endsWith('/index.html') 
+          ? pathname.slice(0, -10) 
+          : pathname;
+        window.location.replace(base + 'admin.html');
+        return;
+      }
+
+      // 2. Clean up segments
+      const segments = pathname.split('/').filter(Boolean);
+      if (segments.length === 0) {
+        window.location.replace('/admin.html');
+        return;
+      }
+
+      // Get short code (always the last segment)
+      const code = segments[segments.length - 1];
+
+      // Check if it looks like a system file or static folder
+      const isSystemFile = code.includes('.') || 
+                           code === 'admin' || 
+                           code === 'go' ||
+                           segments.includes('css') || 
+                           segments.includes('js');
+
+      if (isSystemFile) {
+        // If it is an actual missing file/resource, show a custom 404 styling
+        document.title = "Page Not Found";
+        const card = document.querySelector('.glass-card');
+        card.innerHTML = `
+          <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+          <h2>Page Not Found</h2>
+          <p class="text-secondary mt-2">The requested resource could not be found.</p>
+          <a href="./admin.html" class="btn btn-primary mt-6">Go to Admin Dashboard</a>
+        `;
+        return;
+      }
+
+      // 3. Determine the base path for redirect (all segments except the last code)
+      const baseSegments = segments.slice(0, -1);
+      const basePath = '/' + baseSegments.map(s => s + '/').join('');
+      
+      // Redirect to go.html with code query param
+      window.location.replace(basePath + 'go.html?code=' + encodeURIComponent(code));
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Secure and modern Firebase URL Shortener Admin Dashboard.">
+  <title>Admin Dashboard | Premium URL Shortener</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Ambient Gradient mesh -->
+  <div class="bg-gradient-mesh"></div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- 1. Authentication Screen -->
+  <div id="authScreen" class="auth-wrapper">
+    <div class="glass-card auth-card">
+      <div class="auth-header">
+        <div class="auth-logo">🔗</div>
+        <h1 class="auth-title">Admin Access</h1>
+        <p class="auth-subtitle">Sign in to manage your short links and ad spaces.</p>
+      </div>
+      <form id="loginForm" autocomplete="on">
+        <div class="form-group">
+          <label for="loginEmail" class="form-label">Email Address</label>
+          <input type="email" id="loginEmail" class="form-input" placeholder="admin@example.com" required autocomplete="email">
+        </div>
+        <div class="form-group" style="margin-bottom: 1.75rem;">
+          <label for="loginPassword" class="form-label">Password</label>
+          <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <button type="submit" id="loginSubmitBtn" class="btn btn-primary btn-block">
+          <span>Sign In</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. Dashboard Screen (Hidden until logged in) -->
+  <div id="dashboardScreen" class="dashboard-wrapper container">
+    <!-- Navbar Header -->
+    <header class="dashboard-header">
+      <div class="logo-text">
+        <span>🔗</span>
+        <span>AdLinker</span>
+      </div>
+      <div class="user-badge">
+        <span id="userEmailDisplay" class="user-email">admin@example.com</span>
+        <button id="logoutBtn" class="btn btn-secondary btn-sm" aria-label="Sign Out">
+          <!-- Sign out SVG icon -->
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          <span>Logout</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Stats Grid Row -->
+    <div class="stats-grid">
+      <div class="glass-card stat-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-info">
+          <span id="statTotalLinks" class="stat-value">0</span>
+          <span class="stat-label">Total Links</span>
+        </div>
+      </div>
+      <div class="glass-card stat-card">
+        <div class="stat-icon">🖱️</div>
+        <div class="stat-info">
+          <span id="statTotalClicks" class="stat-value">0</span>
+          <span class="stat-label">Total Clicks</span>
+        </div>
+      </div>
+      <div class="glass-card stat-card">
+        <div class="stat-icon">🟢</div>
+        <div class="stat-info">
+          <span id="statActiveLinks" class="stat-value">0</span>
+          <span class="stat-label">Active Links</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Grid Panels -->
+    <div class="dashboard-grid">
+      
+      <!-- LEFT PANEL: Link Management -->
+      <div class="flex" style="flex-direction: column; gap: 2rem;">
+        
+        <!-- Shortener Creator Card -->
+        <div class="glass-card">
+          <div class="panel-header">
+            <h2 class="panel-title">⚡ Create Short Link</h2>
+          </div>
+          <div class="panel-body">
+            <form id="createLinkForm">
+              <div class="form-group">
+                <label for="originalUrlInput" class="form-label">Paste Long URL</label>
+                <input type="url" id="originalUrlInput" class="form-input" placeholder="https://example.com/very-long-destination-url-here" required autocomplete="url">
+              </div>
+              <div class="form-group">
+                <label for="customCodeInput" class="form-label">Custom Short Code <span class="text-muted">(Optional)</span></label>
+                <div class="flex align-center gap-2">
+                  <input type="text" id="customCodeInput" class="form-input" placeholder="e.g., promo123" pattern="^[a-zA-Z0-9-_]+$" title="Only letters, numbers, dashes and underscores.">
+                  <button type="button" id="generateCodeBtn" class="btn btn-secondary" style="white-space: nowrap;" title="Generate random code">Auto Gen</button>
+                </div>
+                <small class="text-muted mt-1" style="display: block;">Leave blank to generate a random 6-character code.</small>
+              </div>
+              <button type="submit" id="createLinkSubmitBtn" class="btn btn-primary w-full mt-2">
+                <span>Create Shortened Link</span>
+              </button>
+            </form>
+
+            <!-- Shortened URL Output Display (hidden by default) -->
+            <div id="linkResultBox" class="glass-card hidden mt-4" style="background: rgba(20, 184, 166, 0.05); border-color: rgba(20, 184, 166, 0.2); padding: 1.25rem;">
+              <span class="form-label text-success">Link Generated Successfully!</span>
+              <div class="flex align-center gap-2 mt-2">
+                <input type="text" id="resultShortUrl" class="form-input" readonly style="font-family: monospace; font-weight: 600; color: var(--color-accent);">
+                <button type="button" id="copyResultBtn" class="btn btn-primary" style="padding: 0.75rem 1rem;" title="Copy to clipboard">
+                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Links List Table Card -->
+        <div class="glass-card">
+          <div class="panel-header">
+            <h2 class="panel-title">🔗 Shortened URLs</h2>
+          </div>
+          <div class="panel-body" style="padding: 1.25rem;">
+            
+            <!-- Actions Bar: Search links -->
+            <div class="actions-bar">
+              <div class="search-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" class="form-input search-input" placeholder="Search by code or original URL...">
+              </div>
+            </div>
+
+            <!-- Table -->
+            <div class="table-responsive">
+              <table class="links-table">
+                <thead>
+                  <tr>
+                    <th>Short Link</th>
+                    <th>Destination URL</th>
+                    <th class="text-center">Clicks</th>
+                    <th class="text-center">Active</th>
+                    <th class="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="linksTableBody">
+                  <!-- JS dynamically populates here -->
+                  <tr>
+                    <td colspan="5" class="text-center text-muted" style="padding: 3rem 0;">
+                      <div class="spinner"></div>
+                      <p class="mt-2">Fetching short links...</p>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT PANEL: Settings Configuration -->
+      <div class="glass-card" style="height: fit-content;">
+        <div class="panel-header">
+          <h2 class="panel-title">⚙️ Ad Settings</h2>
+        </div>
+        <div class="panel-body">
+          <form id="settingsForm">
+            <div class="form-group">
+              <label for="settingPageTitle" class="form-label">Visitor Page Title</label>
+              <input type="text" id="settingPageTitle" class="form-input" placeholder="Loading Short Link..." required>
+            </div>
+            
+            <div class="form-group">
+              <label for="settingButtonText" class="form-label">Continue Button Text</label>
+              <input type="text" id="settingButtonText" class="form-input" placeholder="Click to Continue" required>
+            </div>
+
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="settingCountdown" class="form-label">Timer (Seconds)</label>
+                <input type="number" id="settingCountdown" class="form-input" min="5" max="60" value="10" required>
+              </div>
+              <div class="form-group" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: center; align-items: flex-start;">
+                <label class="form-label" style="margin-bottom: 0.75rem;">Auto Redirect</label>
+                <label class="switch">
+                  <input type="checkbox" id="settingAutoRedirect" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="settingAdScript" class="form-label">Ad Network Script (Google AdSense, Adsterra, etc.)</label>
+              <textarea id="settingAdScript" class="form-input" rows="8" style="font-family: monospace; font-size: 0.85rem;" placeholder="<!-- Paste your Ad HTML or Javascript scripts here -->"></textarea>
+              <small class="text-muted mt-1" style="display: block;">This HTML/Script code will be injected and executed on the visitor ads page.</small>
+            </div>
+
+            <button type="submit" id="saveSettingsBtn" class="btn btn-primary w-full mt-4">
+              <span>Save Settings</span>
+            </button>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 3. Edit Link Modal -->
+  <div id="editModal" class="modal-overlay">
+    <div class="glass-card modal-content">
+      <div class="panel-header">
+        <h2 class="panel-title">✏️ Edit Short Link</h2>
+        <button id="closeEditModalBtn" class="btn-icon-only" aria-label="Close modal">✕</button>
+      </div>
+      <div class="panel-body">
+        <form id="editLinkForm">
+          <input type="hidden" id="editLinkId">
+          <div class="form-group">
+            <label class="form-label">Short Code</label>
+            <input type="text" id="editLinkCode" class="form-input" readonly style="background: rgba(255,255,255,0.02); color: var(--text-muted); font-family: monospace;">
+          </div>
+          <div class="form-group">
+            <label for="editLinkUrl" class="form-label">Destination URL</label>
+            <input type="url" id="editLinkUrl" class="form-input" required autocomplete="url">
+          </div>
+          <div class="form-group flex align-center justify-between" style="margin-bottom: 1.75rem;">
+            <label for="editLinkStatus" class="form-label" style="margin-bottom: 0;">Link Active Status</label>
+            <label class="switch">
+              <input type="checkbox" id="editLinkStatus">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="flex gap-2" style="justify-content: flex-end;">
+            <button type="button" id="cancelEditBtn" class="btn btn-secondary">Cancel</button>
+            <button type="submit" id="saveEditBtn" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Delete Confirmation Modal -->
+  <div id="deleteModal" class="modal-overlay">
+    <div class="glass-card modal-content" style="max-width: 420px;">
+      <div class="panel-header">
+        <h2 class="panel-title" style="color: var(--color-danger);">⚠️ Delete Link</h2>
+      </div>
+      <div class="panel-body">
+        <p>Are you sure you want to permanently delete this short link? This action cannot be undone.</p>
+        <p class="mt-2 text-muted" id="deleteLinkDisplay" style="font-family: monospace; font-size: 0.9rem; background: rgba(0,0,0,0.15); padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border-glass);"></p>
+        <input type="hidden" id="deleteLinkId">
+        <div class="flex gap-2 mt-6" style="justify-content: flex-end;">
+          <button type="button" id="cancelDeleteBtn" class="btn btn-secondary">Cancel</button>
+          <button type="button" id="confirmDeleteBtn" class="btn btn-danger">Delete Link</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard JavaScript Code Logic -->
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>
