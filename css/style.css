@@ -227,13 +227,18 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 500;
   cursor: pointer;
   user-select: none;
-  transition: all var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
   border: 1px solid transparent;
 }
 
 .sidebar-menu-item:hover {
   background: rgba(255, 255, 255, 0.03);
   color: var(--text-primary);
+  transform: translateX(2px);
+}
+
+#sidebarCollapseToggle:checked ~ .dashboard-layout .sidebar .sidebar-menu-item:hover {
+  transform: none; /* Disable shift on collapse */
 }
 
 .menu-icon {
@@ -409,12 +414,32 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.04), transparent 60%);
+  pointer-events: none;
+}
+
+.stat-card:nth-child(2)::after {
+  background: radial-gradient(circle at top right, rgba(139, 92, 246, 0.04), transparent 60%);
+}
+
+.stat-card:nth-child(3)::after {
+  background: radial-gradient(circle at top right, rgba(16, 185, 129, 0.04), transparent 60%);
 }
 
 .stat-icon-wrapper {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: relative;
+  z-index: 2;
 }
 
 .stat-icon {
@@ -462,6 +487,8 @@ h1, h2, h3, h4, h5, h6 {
 .stat-info {
   display: flex;
   flex-direction: column;
+  position: relative;
+  z-index: 2;
 }
 
 .stat-value {
@@ -523,7 +550,7 @@ h1, h2, h3, h4, h5, h6 {
 .form-input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   background: rgba(0, 0, 0, 0.3);
 }
 
@@ -599,6 +626,10 @@ textarea.form-input {
 .btn-sm {
   padding: 0.35rem 0.65rem;
   font-size: 0.78rem;
+}
+
+.btn:active, .btn-icon-only:active {
+  transform: scale(0.97) !important;
 }
 
 .btn:disabled {
@@ -720,8 +751,8 @@ input:checked + .slider:before {
 
 .link-short-text {
   font-family: monospace;
-  font-weight: 600;
-  color: #60a5fa;
+  font-weight: 500;
+  color: #3b82f6; /* Modern Blue Link */
 }
 
 /* Action bar filter */
