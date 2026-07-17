@@ -1093,3 +1093,12 @@ input:checked + .slider:before {
   transform: rotate(180deg);
 }
 
+/* Toggle Ad Scripts Icon Rotation */
+#toggleAdScriptsBtn svg {
+  transition: transform var(--transition-normal);
+}
+#toggleAdScriptsBtn.active svg {
+  transform: rotate(90deg);
+  color: var(--color-primary);
+}
+

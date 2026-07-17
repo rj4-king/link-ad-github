@@ -21,6 +21,174 @@ import {
   limit
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+class AdSettingsComponent extends HTMLElement {
+  constructor() {
+    super();
+    this.innerHTML = `
+      <div class="glass-card" style="height: fit-content;">
+        <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+          <h2 class="panel-title">⚙️ Ad Settings</h2>
+          <button type="button" id="toggleAdScriptsBtn" class="btn-icon-only" style="padding: 0.5rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; background: transparent; border: none; cursor: pointer; color: var(--text-secondary);" title="Toggle Advanced Ad Scripts">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>
+            </svg>
+          </button>
+        </div>
+        <div class="panel-body">
+          <form id="settingsForm">
+            <div class="form-group">
+              <label for="settingPageTitle" class="form-label">Visitor Page Title</label>
+              <input type="text" id="settingPageTitle" class="form-input" placeholder="Loading Short Link..." required>
+            </div>
+            
+            <div class="form-group">
+              <label for="settingButtonText" class="form-label">Continue Button Text</label>
+              <input type="text" id="settingButtonText" class="form-input" placeholder="Click to Continue" required>
+            </div>
+
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+              <div class="form-group">
+                <label for="settingCountdown" class="form-label">Timer (Seconds)</label>
+                <input type="number" id="settingCountdown" class="form-input" min="5" max="60" value="10" required>
+              </div>
+              <div class="form-group" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: center; align-items: flex-start;">
+                <label class="form-label" style="margin-bottom: 0.75rem;">Auto Redirect</label>
+                <label class="switch">
+                  <input type="checkbox" id="settingAutoRedirect" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Collapsible Ad Scripts Wrapper (hidden by default) -->
+            <div id="advancedAdScriptsContainer" style="display: none; transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1); max-height: 0; overflow: hidden; margin-top: 1.5rem; border-top: 1px dashed var(--border-glass); padding-top: 1.5rem;">
+              <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>⚙️ Advanced Script Slots</span>
+              </h3>
+
+              <!-- Header Ad Script Section -->
+              <div class="glass-card settings-sub-card mb-4" style="padding: 0; border-color: rgba(255,255,255,0.03); background: rgba(0,0,0,0.15); overflow: hidden;">
+                <div class="ad-section-header">
+                  <div class="flex align-center gap-2">
+                    <span class="ad-toggle-icon">⚙️</span>
+                    <span class="form-label" style="margin-bottom: 0; font-weight: 600; color: var(--text-primary);">Header Ad Script</span>
+                  </div>
+                  <div class="flex align-center gap-3" style="margin-left: auto;">
+                    <div class="flex align-center gap-2" onclick="event.stopPropagation()">
+                      <span class="text-secondary" style="font-size: 0.725rem;">Enable</span>
+                      <label class="switch" style="transform: scale(0.85);">
+                        <input type="checkbox" id="settingHeaderAdEnabled">
+                        <span class="slider"></span>
+                      </label>
+                    </div>
+                    <span class="chevron-icon">▼</span>
+                  </div>
+                </div>
+                <div class="ad-section-content">
+                  <textarea id="settingHeaderAdScript" class="form-input" rows="4" style="font-family: monospace; font-size: 0.8rem;" placeholder="<!-- Paste script or HTML for Header ad space -->"></textarea>
+                  <div class="flex justify-between align-center mt-2">
+                    <small class="text-muted" style="font-size: 0.725rem;">Injected at page header.</small>
+                    <button type="button" id="saveHeaderAdBtn" class="btn btn-primary btn-sm" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">Save Header Ad</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Body Ad Script Section -->
+              <div class="glass-card settings-sub-card mb-4" style="padding: 0; border-color: rgba(255,255,255,0.03); background: rgba(0,0,0,0.15); overflow: hidden;">
+                <div class="ad-section-header">
+                  <div class="flex align-center gap-2">
+                    <span class="ad-toggle-icon">⚙️</span>
+                    <span class="form-label" style="margin-bottom: 0; font-weight: 600; color: var(--text-primary);">Body Ad Script</span>
+                  </div>
+                  <div class="flex align-center gap-3" style="margin-left: auto;">
+                    <div class="flex align-center gap-2" onclick="event.stopPropagation()">
+                      <span class="text-secondary" style="font-size: 0.725rem;">Enable</span>
+                      <label class="switch" style="transform: scale(0.85);">
+                        <input type="checkbox" id="settingBodyAdEnabled">
+                        <span class="slider"></span>
+                      </label>
+                    </div>
+                    <span class="chevron-icon">▼</span>
+                  </div>
+                </div>
+                <div class="ad-section-content">
+                  <textarea id="settingBodyAdScript" class="form-input" rows="4" style="font-family: monospace; font-size: 0.8rem;" placeholder="<!-- Paste script or HTML for Body ad space -->"></textarea>
+                  <div class="flex justify-between align-center mt-2">
+                    <small class="text-muted" style="font-size: 0.725rem;">Injected inside redirect card (above timer).</small>
+                    <button type="button" id="saveBodyAdBtn" class="btn btn-primary btn-sm" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">Save Body Ad</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Footer Ad Script Section -->
+              <div class="glass-card settings-sub-card mb-4" style="padding: 0; border-color: rgba(255,255,255,0.03); background: rgba(0,0,0,0.15); overflow: hidden;">
+                <div class="ad-section-header">
+                  <div class="flex align-center gap-2">
+                    <span class="ad-toggle-icon">⚙️</span>
+                    <span class="form-label" style="margin-bottom: 0; font-weight: 600; color: var(--text-primary);">Footer Ad Script</span>
+                  </div>
+                  <div class="flex align-center gap-3" style="margin-left: auto;">
+                    <div class="flex align-center gap-2" onclick="event.stopPropagation()">
+                      <span class="text-secondary" style="font-size: 0.725rem;">Enable</span>
+                      <label class="switch" style="transform: scale(0.85);">
+                        <input type="checkbox" id="settingFooterAdEnabled">
+                        <span class="slider"></span>
+                      </label>
+                    </div>
+                    <span class="chevron-icon">▼</span>
+                  </div>
+                </div>
+                <div class="ad-section-content">
+                  <textarea id="settingFooterAdScript" class="form-input" rows="4" style="font-family: monospace; font-size: 0.8rem;" placeholder="<!-- Paste script or HTML for Footer ad space -->"></textarea>
+                  <div class="flex justify-between align-center mt-2">
+                    <small class="text-muted" style="font-size: 0.725rem;">Injected inside redirect card (below button).</small>
+                    <button type="button" id="saveFooterAdBtn" class="btn btn-primary btn-sm" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">Save Footer Ad</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Extra/Custom Ad Script Section -->
+              <div class="glass-card settings-sub-card mb-4" style="padding: 0; border-color: rgba(255,255,255,0.03); background: rgba(0,0,0,0.15); overflow: hidden;">
+                <div class="ad-section-header">
+                  <div class="flex align-center gap-2">
+                    <span class="ad-toggle-icon">⚙️</span>
+                    <span class="form-label" style="margin-bottom: 0; font-weight: 600; color: var(--text-primary);">Custom/Extra Ad Script</span>
+                  </div>
+                  <div class="flex align-center gap-3" style="margin-left: auto;">
+                    <div class="flex align-center gap-2" onclick="event.stopPropagation()">
+                      <span class="text-secondary" style="font-size: 0.725rem;">Enable</span>
+                      <label class="switch" style="transform: scale(0.85);">
+                        <input type="checkbox" id="settingCustomAdEnabled">
+                        <span class="slider"></span>
+                      </label>
+                    </div>
+                    <span class="chevron-icon">▼</span>
+                  </div>
+                </div>
+                <div class="ad-section-content">
+                  <textarea id="settingCustomAdScript" class="form-input" rows="4" style="font-family: monospace; font-size: 0.8rem;" placeholder="<!-- Paste script or HTML for Custom ad space -->"></textarea>
+                  <div class="flex justify-between align-center mt-2">
+                    <small class="text-muted" style="font-size: 0.725rem;">Injected at the bottom of the page.</small>
+                    <button type="button" id="saveCustomAdBtn" class="btn btn-primary btn-sm" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">Save Custom Ad</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="border-top: 1px solid var(--border-glass); padding-top: 1.25rem; margin-top: 1.5rem;">
+              <button type="submit" id="saveSettingsBtn" class="btn btn-secondary w-full">
+                <span>Save General Configs</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+  }
+}
+customElements.define('ad-settings-component', AdSettingsComponent);
+
 // DOM Elements - Auth Screen
 const authScreen = document.getElementById("authScreen");
 const loginForm = document.getElementById("loginForm");
@@ -923,4 +1091,22 @@ document.querySelectorAll(".ad-section-header").forEach(header => {
       card.classList.toggle("open");
     }
   });
+});
+
+// Toggle Visibility of Advanced Ad Slots Section via delegation
+document.addEventListener("click", (e) => {
+  const toggleBtn = e.target.closest("#toggleAdScriptsBtn");
+  if (toggleBtn) {
+    const container = document.getElementById("advancedAdScriptsContainer");
+    if (container) {
+      const isClosed = container.style.display === "none" || !container.style.display;
+      container.style.display = isClosed ? "block" : "none";
+      toggleBtn.classList.toggle("active", isClosed);
+      
+      // Handle micro-animation transitions
+      setTimeout(() => {
+        container.style.maxHeight = isClosed ? "2000px" : "0";
+      }, 50);
+    }
+  }
 });
