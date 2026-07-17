@@ -49,6 +49,11 @@ class AdSettingsComponent extends HTMLElement {
               <input type="text" id="setupName" class="form-input" placeholder="e.g., Default Setup" required>
             </div>
 
+            <div class="form-group">
+              <label for="settingPageTitle" class="form-label">Visitor Page Title</label>
+              <input type="text" id="settingPageTitle" class="form-input" placeholder="e.g., Short Link Redirection" required>
+            </div>
+
             <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
               <div class="form-group" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: center;">
                 <label class="form-label" style="margin-bottom: 0.5rem;">Set as Default</label>
@@ -252,6 +257,7 @@ let adSetupSelector = null;
 let createNewAdSetupBtn = null;
 let setupIdInput = null;
 let setupNameInput = null;
+let settingPageTitleInput = null;
 let setupIsDefaultInput = null;
 let setupEnabledInput = null;
 let settingCountdownInput = null;
@@ -282,6 +288,7 @@ function initSettingsDOMBindings() {
   createNewAdSetupBtn = document.getElementById("createNewAdSetupBtn");
   setupIdInput = document.getElementById("setupId");
   setupNameInput = document.getElementById("setupName");
+  settingPageTitleInput = document.getElementById("settingPageTitle");
   setupIsDefaultInput = document.getElementById("setupIsDefault");
   setupEnabledInput = document.getElementById("setupEnabled");
   settingCountdownInput = document.getElementById("settingCountdown");
@@ -1250,6 +1257,7 @@ async function fetchSettings() {
       defaultSetup = {
         id: "default",
         name: "Default Ad Setup",
+        pageTitle: "Short Link Redirection | AdLinker",
         isDefault: true,
         enabled: true,
         countdown: 10,
@@ -1331,6 +1339,7 @@ function loadSetupIntoForm(setupId) {
   selectedAdSetupId = setupId;
   setupIdInput.value = setup.id;
   setupNameInput.value = setup.name;
+  settingPageTitleInput.value = setup.pageTitle || "Redirecting...";
   setupIsDefaultInput.checked = setup.isDefault === true;
   setupEnabledInput.checked = setup.enabled !== false;
   settingCountdownInput.value = setup.countdown || 10;
@@ -1379,6 +1388,7 @@ document.addEventListener("click", (e) => {
     selectedAdSetupId = newId;
     setupIdInput.value = newId;
     setupNameInput.value = "New Ad Setup";
+    settingPageTitleInput.value = "Short Link Redirection | AdLinker";
     setupNameInput.disabled = false;
     setupIsDefaultInput.checked = false;
     setupIsDefaultInput.disabled = false;
@@ -1452,6 +1462,7 @@ document.addEventListener("submit", async (e) => {
     
     const id = setupIdInput.value;
     const name = setupNameInput.value.trim();
+    const pageTitle = settingPageTitleInput.value.trim();
     const isDefault = setupIsDefaultInput.checked;
     const enabled = setupEnabledInput.checked;
     const countdown = parseInt(settingCountdownInput.value);
@@ -1497,6 +1508,7 @@ document.addEventListener("submit", async (e) => {
       const newSetup = {
         id,
         name,
+        pageTitle,
         isDefault,
         enabled,
         countdown,

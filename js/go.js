@@ -281,7 +281,7 @@ function proceedToCountdown(linkData, adSetup) {
   document.getElementById("passwordView").classList.add("hidden");
 
   // Determine redirection details based on message page or standard ad config
-  let pageTitle = adSetup.name || "Redirecting...";
+  let pageTitle = adSetup.pageTitle || adSetup.name || "Redirecting...";
   if (linkData.messagePageEnabled) {
     pageTitle = linkData.messagePageTitle || "Confirm Redirection";
     pageTitleDisplay.textContent = pageTitle;
@@ -289,7 +289,7 @@ function proceedToCountdown(linkData, adSetup) {
     customButtonText = linkData.messagePageButton || "Continue";
     autoRedirect = false;
   } else {
-    pageTitleDisplay.textContent = adSetup.name || "Your link is almost ready...";
+    pageTitleDisplay.textContent = adSetup.pageTitle || adSetup.name || "Your link is almost ready...";
     pageSubtitleDisplay.textContent = "Please wait for the timer to unlock the destination URL.";
     customButtonText = adSetup.continueButtonText || "Click to Continue";
     autoRedirect = adSetup.autoRedirect !== false;
