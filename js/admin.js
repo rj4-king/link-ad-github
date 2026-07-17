@@ -22,8 +22,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 class AdSettingsComponent extends HTMLElement {
-  constructor() {
-    super();
+  connectedCallback() {
     this.innerHTML = `
       <div class="glass-card" style="height: fit-content;">
         <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
@@ -223,29 +222,55 @@ const searchInput = document.getElementById("searchInput");
 const linksTableBody = document.getElementById("linksTableBody");
 
 // DOM Elements - General Settings
-const settingsForm = document.getElementById("settingsForm");
-const settingPageTitle = document.getElementById("settingPageTitle");
-const settingButtonText = document.getElementById("settingButtonText");
-const settingCountdown = document.getElementById("settingCountdown");
-const settingAutoRedirect = document.getElementById("settingAutoRedirect");
-const saveSettingsBtn = document.getElementById("saveSettingsBtn");
+let settingsForm = null;
+let settingPageTitle = null;
+let settingButtonText = null;
+let settingCountdown = null;
+let settingAutoRedirect = null;
+let saveSettingsBtn = null;
 
 // DOM Elements - Advanced Ad Script Sections
-const settingHeaderAdScript = document.getElementById("settingHeaderAdScript");
-const settingHeaderAdEnabled = document.getElementById("settingHeaderAdEnabled");
-const saveHeaderAdBtn = document.getElementById("saveHeaderAdBtn");
+let settingHeaderAdScript = null;
+let settingHeaderAdEnabled = null;
+let saveHeaderAdBtn = null;
 
-const settingBodyAdScript = document.getElementById("settingBodyAdScript");
-const settingBodyAdEnabled = document.getElementById("settingBodyAdEnabled");
-const saveBodyAdBtn = document.getElementById("saveBodyAdBtn");
+let settingBodyAdScript = null;
+let settingBodyAdEnabled = null;
+let saveBodyAdBtn = null;
 
-const settingFooterAdScript = document.getElementById("settingFooterAdScript");
-const settingFooterAdEnabled = document.getElementById("settingFooterAdEnabled");
-const saveFooterAdBtn = document.getElementById("saveFooterAdBtn");
+let settingFooterAdScript = null;
+let settingFooterAdEnabled = null;
+let saveFooterAdBtn = null;
 
-const settingCustomAdScript = document.getElementById("settingCustomAdScript");
-const settingCustomAdEnabled = document.getElementById("settingCustomAdEnabled");
-const saveCustomAdBtn = document.getElementById("saveCustomAdBtn");
+let settingCustomAdScript = null;
+let settingCustomAdEnabled = null;
+let saveCustomAdBtn = null;
+
+// Bind component DOM elements after connected upgrade
+function initSettingsDOMBindings() {
+  settingsForm = document.getElementById("settingsForm");
+  settingPageTitle = document.getElementById("settingPageTitle");
+  settingButtonText = document.getElementById("settingButtonText");
+  settingCountdown = document.getElementById("settingCountdown");
+  settingAutoRedirect = document.getElementById("settingAutoRedirect");
+  saveSettingsBtn = document.getElementById("saveSettingsBtn");
+
+  settingHeaderAdScript = document.getElementById("settingHeaderAdScript");
+  settingHeaderAdEnabled = document.getElementById("settingHeaderAdEnabled");
+  saveHeaderAdBtn = document.getElementById("saveHeaderAdBtn");
+
+  settingBodyAdScript = document.getElementById("settingBodyAdScript");
+  settingBodyAdEnabled = document.getElementById("settingBodyAdEnabled");
+  saveBodyAdBtn = document.getElementById("saveBodyAdBtn");
+
+  settingFooterAdScript = document.getElementById("settingFooterAdScript");
+  settingFooterAdEnabled = document.getElementById("settingFooterAdEnabled");
+  saveFooterAdBtn = document.getElementById("saveFooterAdBtn");
+
+  settingCustomAdScript = document.getElementById("settingCustomAdScript");
+  settingCustomAdEnabled = document.getElementById("settingCustomAdEnabled");
+  saveCustomAdBtn = document.getElementById("saveCustomAdBtn");
+}
 
 // DOM Elements - Modals
 const editModal = document.getElementById("editModal");
@@ -832,6 +857,7 @@ window.addEventListener("click", (e) => {
 
 async function fetchSettings() {
   try {
+    initSettingsDOMBindings();
     const docRef = doc(db, "settings", "config");
     const docSnap = await getDoc(docRef);
     
@@ -855,14 +881,40 @@ async function fetchSettings() {
       settingCustomAdScript.value = data.customAdScript || "";
       settingCustomAdEnabled.checked = data.customAdEnabled === true;
     } else {
-      // Default setup
-      settingPageTitle.value = "Short Link Redirection | AdLinker";
-      settingButtonText.value = "Click to Continue";
-      settingCountdown.value = 10;
-      settingAutoRedirect.checked = true;
+      console.log("Settings config does not exist. Initializing defaults in Firestore...");
+      const defaultSettings = {
+        pageTitle: "Short Link Redirection | AdLinker",
+        buttonText: "Click to Continue",
+        countdown: 10,
+        autoRedirect: true,
+        headerAdScript: "",
+        headerAdEnabled: false,
+        bodyAdScript: "",
+        bodyAdEnabled: false,
+        footerAdScript: "",
+        footerAdEnabled: false,
+        customAdScript: "",
+        customAdEnabled: false
+      };
       
+      await setDoc(docRef, defaultSettings);
+      
+      settingPageTitle.value = defaultSettings.pageTitle;
+      settingButtonText.value = defaultSettings.buttonText;
+      settingCountdown.value = defaultSettings.countdown;
+      settingAutoRedirect.checked = defaultSettings.autoRedirect;
+      
+      settingHeaderAdScript.value = "";
+      settingHeaderAdEnabled.checked = false;
+      settingBodyAdScript.value = "";
+      settingBodyAdEnabled.checked = false;
+      settingFooterAdScript.value = "";
+      settingFooterAdEnabled.checked = false;
+      settingCustomAdScript.value = "";
+      settingCustomAdEnabled.checked = false;
+
       // Send deployment warning
-      logActivity("warning", "Deployment Configuration missing. Created settings with default configs.");
+      logActivity("warning", "Deployment Configuration missing. Initialized database default settings config.");
     }
   } catch (err) {
     console.error("Fetch settings error:", err);
@@ -870,46 +922,10 @@ async function fetchSettings() {
   }
 }
 
-// General config save form submit handler
-settingsForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  
-  const pageTitle = settingPageTitle.value.trim();
-  const buttonText = settingButtonText.value.trim();
-  const countdown = parseInt(settingCountdown.value);
-  const autoRedirect = settingAutoRedirect.checked;
-  
-  if (countdown < 5 || countdown > 60) {
-    showToast("Timer must be between 5 and 60 seconds.", "warning");
-    return;
-  }
-  
-  saveSettingsBtn.disabled = true;
-  saveSettingsBtn.innerHTML = `<div class="spinner"></div> <span>Saving...</span>`;
-  
-  try {
-    const docRef = doc(db, "settings", "config");
-    await setDoc(docRef, {
-      pageTitle,
-      buttonText,
-      countdown,
-      autoRedirect
-    }, { merge: true });
-    
-    showToast("Configuration saved successfully!", "success");
-    logActivity("success", "Updated General settings configurations (Page Title, Button, Countdown).");
-  } catch (err) {
-    console.error("Save settings error:", err);
-    showToast("Failed to save settings configurations.", "error");
-  } finally {
-    saveSettingsBtn.disabled = false;
-    saveSettingsBtn.innerHTML = `<span>Save General Configs</span>`;
-  }
-});
-
 // Reusable individual ad settings saver
 async function saveSingleAdConfig(type, fields) {
   const btn = document.getElementById(`save${type}AdBtn`);
+  if (!btn) return;
   const originalHtml = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = `<div class="spinner" style="width: 1rem; height: 1rem;"></div> Saving...`;
@@ -928,36 +944,76 @@ async function saveSingleAdConfig(type, fields) {
   }
 }
 
-// Header ad script click save listener
-saveHeaderAdBtn.addEventListener("click", () => {
-  saveSingleAdConfig("Header", {
-    headerAdScript: settingHeaderAdScript.value,
-    headerAdEnabled: settingHeaderAdEnabled.checked
-  });
+// General config save form submit handler via event delegation
+document.addEventListener("submit", async (e) => {
+  if (e.target && e.target.id === "settingsForm") {
+    e.preventDefault();
+    initSettingsDOMBindings();
+    
+    const pageTitle = settingPageTitle.value.trim();
+    const buttonText = settingButtonText.value.trim();
+    const countdown = parseInt(settingCountdown.value);
+    const autoRedirect = settingAutoRedirect.checked;
+    
+    if (countdown < 5 || countdown > 60) {
+      showToast("Timer must be between 5 and 60 seconds.", "warning");
+      return;
+    }
+    
+    saveSettingsBtn.disabled = true;
+    saveSettingsBtn.innerHTML = `<div class="spinner"></div> <span>Saving...</span>`;
+    
+    try {
+      const docRef = doc(db, "settings", "config");
+      await setDoc(docRef, {
+        pageTitle,
+        buttonText,
+        countdown,
+        autoRedirect
+      }, { merge: true });
+      
+      showToast("Configuration saved successfully!", "success");
+      logActivity("success", "Updated General settings configurations (Page Title, Button, Countdown).");
+    } catch (err) {
+      console.error("Save settings error:", err);
+      showToast("Failed to save settings configurations.", "error");
+    } finally {
+      saveSettingsBtn.disabled = false;
+      saveSettingsBtn.innerHTML = `<span>Save General Configs</span>`;
+    }
+  }
 });
 
-// Body ad script click save listener
-saveBodyAdBtn.addEventListener("click", () => {
-  saveSingleAdConfig("Body", {
-    bodyAdScript: settingBodyAdScript.value,
-    bodyAdEnabled: settingBodyAdEnabled.checked
-  });
-});
-
-// Footer ad script click save listener
-saveFooterAdBtn.addEventListener("click", () => {
-  saveSingleAdConfig("Footer", {
-    footerAdScript: settingFooterAdScript.value,
-    footerAdEnabled: settingFooterAdEnabled.checked
-  });
-});
-
-// Custom/Extra ad script click save listener
-saveCustomAdBtn.addEventListener("click", () => {
-  saveSingleAdConfig("Custom", {
-    customAdScript: settingCustomAdScript.value,
-    customAdEnabled: settingCustomAdEnabled.checked
-  });
+// Advanced individual ad click event handlers via delegation
+document.addEventListener("click", async (e) => {
+  if (!e.target) return;
+  const targetId = e.target.id;
+  
+  if (targetId === "saveHeaderAdBtn" || targetId === "saveBodyAdBtn" || targetId === "saveFooterAdBtn" || targetId === "saveCustomAdBtn") {
+    initSettingsDOMBindings();
+    
+    if (targetId === "saveHeaderAdBtn") {
+      saveSingleAdConfig("Header", {
+        headerAdScript: settingHeaderAdScript.value,
+        headerAdEnabled: settingHeaderAdEnabled.checked
+      });
+    } else if (targetId === "saveBodyAdBtn") {
+      saveSingleAdConfig("Body", {
+        bodyAdScript: settingBodyAdScript.value,
+        bodyAdEnabled: settingBodyAdEnabled.checked
+      });
+    } else if (targetId === "saveFooterAdBtn") {
+      saveSingleAdConfig("Footer", {
+        footerAdScript: settingFooterAdScript.value,
+        footerAdEnabled: settingFooterAdEnabled.checked
+      });
+    } else if (targetId === "saveCustomAdBtn") {
+      saveSingleAdConfig("Custom", {
+        customAdScript: settingCustomAdScript.value,
+        customAdEnabled: settingCustomAdEnabled.checked
+      });
+    }
+  }
 });
 
 
@@ -1093,14 +1149,15 @@ window.addEventListener("click", (e) => {
   }
 });
 
-// Collapsible Ad Settings Accordion
-document.querySelectorAll(".ad-section-header").forEach(header => {
-  header.addEventListener("click", () => {
+// Collapsible Ad Settings Accordion via delegation
+document.addEventListener("click", (e) => {
+  const header = e.target.closest(".ad-section-header");
+  if (header) {
     const card = header.closest(".settings-sub-card");
     if (card) {
       card.classList.toggle("open");
     }
-  });
+  }
 });
 
 // Toggle Visibility of Advanced Ad Slots Section via delegation
