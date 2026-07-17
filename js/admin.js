@@ -318,6 +318,7 @@ const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
 
 // DOM Elements - Notifications Center
 const notificationBellBtn = document.getElementById("notificationBellBtn");
+const notificationBellContainer = document.getElementById("notificationBellContainer");
 const notificationBadge = document.getElementById("notificationBadge");
 const notificationPanel = document.getElementById("notificationPanel");
 const closeNotificationPanelBtn = document.getElementById("closeNotificationPanelBtn");
@@ -433,49 +434,61 @@ onAuthStateChanged(auth, (user) => {
 });
 
 // Login Form Submit Handler
-loginForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const email = loginEmail.value.trim();
-  const password = loginPassword.value;
-  
-  loginSubmitBtn.disabled = true;
-  loginSubmitBtn.innerHTML = `<div class="spinner"></div> <span>Verifying...</span>`;
-  
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-    showToast("Signed in successfully!", "success");
-  } catch (error) {
-    console.error("Login failed:", error);
-    let errorMsg = "Invalid email or password.";
-    if (error.code === "auth/user-not-found") errorMsg = "No account found with this email.";
-    if (error.code === "auth/wrong-password") errorMsg = "Incorrect password.";
-    showToast(errorMsg, "error");
-    logActivity("error", `Failed login attempt for email: ${email}. Reason: ${error.message}`);
-  } finally {
-    loginSubmitBtn.disabled = false;
-    loginSubmitBtn.innerHTML = `<span>Sign In</span>`;
-  }
-});
+if (loginForm) {
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = loginEmail.value.trim();
+    const password = loginPassword.value;
+    
+    loginSubmitBtn.disabled = true;
+    loginSubmitBtn.innerHTML = `<div class="spinner"></div> <span>Verifying...</span>`;
+    
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      showToast("Signed in successfully!", "success");
+    } catch (error) {
+      console.error("Login failed:", error);
+      let errorMsg = "Invalid email or password.";
+      if (error.code === "auth/user-not-found") errorMsg = "No account found with this email.";
+      if (error.code === "auth/wrong-password") errorMsg = "Incorrect password.";
+      showToast(errorMsg, "error");
+      logActivity("error", `Failed login attempt for email: ${email}. Reason: ${error.message}`);
+    } finally {
+      loginSubmitBtn.disabled = false;
+      loginSubmitBtn.innerHTML = `<span>Sign In</span>`;
+    }
+  });
+}
 
 // Logout Button Click Handler
-logoutBtn.addEventListener("click", async () => {
-  try {
-    logActivity("info", "Admin initiated sign out.");
-    sessionStorage.removeItem("admin_login_logged");
-    await signOut(auth);
-    showToast("Signed out successfully.", "info");
-    linkResultBox.classList.add("hidden");
-    createLinkForm.reset();
-  } catch (error) {
-    showToast("Error signing out.", "error");
-  }
-});
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", async () => {
+    try {
+      logActivity("info", "Admin initiated sign out.");
+      sessionStorage.removeItem("admin_login_logged");
+      await signOut(auth);
+      showToast("Signed out successfully.", "info");
+      if (linkResultBox) linkResultBox.classList.add("hidden");
+      if (createLinkForm) createLinkForm.reset();
+    } catch (error) {
+      showToast("Error signing out.", "error");
+    }
+  });
+}
 
 // ----------------------------------------------------
 // 2. Real-time Links Operations
 // ----------------------------------------------------
 
 function bindRealtimeLinks() {
+  if (unsubscribeLinks) {
+    try {
+      unsubscribeLinks();
+    } catch (e) {
+      console.warn("Error unsubscribing links listener:", e);
+    }
+    unsubscribeLinks = null;
+  }
   const q = query(collection(db, "links"), orderBy("createdAt", "desc"));
   
   unsubscribeLinks = onSnapshot(q, (snapshot) => {
@@ -583,26 +596,143 @@ function renderLinksTable(links) {
     `;
   }).join("");
   
-  attachTableEventListeners();
 }
 
-// Bind events in Table (copy, toggle status, edit click, delete click)
-function attachTableEventListeners() {
-  document.querySelectorAll(".copy-link-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const url = btn.getAttribute("data-url");
-      navigator.clipboard.writeText(url).then(() => {
-        showToast("Short link copied to clipboard!", "success");
-      }).catch(() => {
-        showToast("Failed to copy link.", "error");
+// Helper to load settings and show the edit link modal
+function openEditLinkModal(id) {
+  const link = linksCache.find(l => l.id === id);
+  if (!link) return;
+  
+  const setChecked = (elId, val) => {
+    const el = document.getElementById(elId);
+    if (el) el.checked = val;
+  };
+  const setValue = (elId, val) => {
+    const el = document.getElementById(elId);
+    if (el) el.value = val;
+  };
+
+  setValue("editLinkId", link.id);
+  setValue("editLinkCode", link.id);
+  setValue("editLinkTitle", link.title || "");
+  setValue("editLinkUrl", link.originalUrl || "");
+  setChecked("editLinkStatus", link.status !== false);
+  
+  // Load Advanced Options into Edit Modal fields
+  setChecked("editLinkAdsCountdownEnabled", link.adsCountdownEnabled !== false);
+  setChecked("editLinkCloakingEnabled", link.linkCloakingEnabled === true);
+  setChecked("editLinkExternalBrowserEnabled", link.externalBrowserEnabled === true);
+  setChecked("editLinkPasswordProtectionEnabled", link.passwordProtectionEnabled === true);
+  setValue("editLinkPasswordValue", link.passwordProtectionValue || "");
+  setValue("editLinkOgTitle", link.ogTitle || "");
+  setValue("editLinkOgDescription", link.ogDescription || "");
+  setValue("editLinkOgImageUrl", link.ogImageUrl || "");
+  
+  setChecked("editLinkDeviceRedirectEnabled", link.deviceRedirectEnabled === true);
+  setValue("editLinkDesktopUrl", link.desktopUrl || "");
+  setValue("editLinkAndroidUrl", link.androidUrl || "");
+  setValue("editLinkIosUrl", link.iosUrl || "");
+  
+  setChecked("editLinkGeoRedirectEnabled", link.geoRedirectEnabled === true);
+  setValue("editLinkGeoDefaultUrl", link.geoDefaultUrl || "");
+  
+  // Populate geo rules list in edit form
+  const editGeoRulesListContainer = document.getElementById("editGeoRulesListContainer");
+  if (editGeoRulesListContainer) {
+    editGeoRulesListContainer.innerHTML = "";
+    if (link.geoRules) {
+      Object.entries(link.geoRules).forEach(([country, destUrl]) => {
+        addGeoRuleRow(editGeoRulesListContainer, country, destUrl);
       });
-    });
+    }
+  }
+  
+  // Ad setup options
+  setValue("editLinkAdSetupOption", link.adSetupOption || "default");
+  setValue("editLinkAdSetupId", link.adSetupId || "");
+  
+  const manual = link.manualAdSettings || {};
+  setValue("editManualCountdown", manual.countdown || 10);
+  setChecked("editManualAutoRedirect", manual.autoRedirect !== false);
+  setValue("editManualButtonText", manual.continueButtonText || "Click to Continue");
+  
+  setValue("editManualHeaderAdScript", manual.headerAdScript || "");
+  setChecked("editManualHeaderAdEnabled", manual.headerAdEnabled === true);
+  setValue("editManualBodyAdScript", manual.bodyAdScript || "");
+  setChecked("editManualBodyAdEnabled", manual.bodyAdEnabled === true);
+  setValue("editManualFooterAdScript", manual.footerAdScript || "");
+  setChecked("editManualFooterAdEnabled", manual.footerAdEnabled === true);
+  setValue("editManualCustomAdScript", manual.customAdScript || "");
+  setChecked("editManualCustomAdEnabled", manual.customAdEnabled === true);
+  
+  // Trigger change events to display/hide appropriate subfields dynamically
+  const triggerChange = (elId) => {
+    const el = document.getElementById(elId);
+    if (el) el.dispatchEvent(new Event("change"));
+  };
+  triggerChange("editLinkPasswordProtectionEnabled");
+  triggerChange("editLinkDeviceRedirectEnabled");
+  triggerChange("editLinkGeoRedirectEnabled");
+  triggerChange("editLinkAdSetupOption");
+
+  // Expand/Collapse clean state
+  const advancedContainer = document.getElementById("editAdvancedOptionsContainer");
+  if (advancedContainer) advancedContainer.classList.add("hidden");
+  
+  const advancedChevron = document.getElementById("editAdvancedOptionsChevron");
+  if (advancedChevron) advancedChevron.style.transform = "rotate(0deg)";
+  
+  const advancedBtn = document.getElementById("toggleEditAdvancedOptionsBtn");
+  if (advancedBtn) advancedBtn.classList.remove("active");
+
+  if (editModal) editModal.classList.add("active");
+}
+
+// Bind event delegation on the links table once
+if (linksTableBody) {
+  linksTableBody.addEventListener("click", (e) => {
+    // 1. Copy Link Button Action
+    const copyBtn = e.target.closest(".copy-link-btn");
+    if (copyBtn) {
+      const url = copyBtn.getAttribute("data-url");
+      if (url) {
+        navigator.clipboard.writeText(url).then(() => {
+          showToast("Short link copied to clipboard!", "success");
+        }).catch(() => {
+          showToast("Failed to copy link.", "error");
+        });
+      }
+      return;
+    }
+
+    // 2. Edit Link Button Action
+    const editBtn = e.target.closest(".edit-link-btn");
+    if (editBtn) {
+      const id = editBtn.getAttribute("data-id");
+      if (id) openEditLinkModal(id);
+      return;
+    }
+
+    // 3. Delete Link Button Action
+    const deleteBtn = e.target.closest(".delete-link-btn");
+    if (deleteBtn) {
+      const id = deleteBtn.getAttribute("data-id");
+      if (id && deleteLinkId && deleteLinkDisplay && deleteModal) {
+        deleteLinkId.value = id;
+        deleteLinkDisplay.textContent = `/${id}`;
+        deleteModal.classList.add("active");
+      }
+      return;
+    }
   });
 
-  document.querySelectorAll(".toggle-status-checkbox").forEach(checkbox => {
-    checkbox.addEventListener("change", async () => {
+  linksTableBody.addEventListener("change", async (e) => {
+    // Status Toggle Checkbox Action
+    const checkbox = e.target.closest(".toggle-status-checkbox");
+    if (checkbox) {
       const id = checkbox.getAttribute("data-id");
       const newStatus = checkbox.checked;
+      if (!id) return;
       
       try {
         const docRef = doc(db, "links", id);
@@ -614,114 +744,15 @@ function attachTableEventListeners() {
         showToast("Error updating link status.", "error");
         checkbox.checked = !newStatus;
       }
-    });
-  });
-
-  document.querySelectorAll(".edit-link-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-id");
-      const link = linksCache.find(l => l.id === id);
-      if (!link) return;
-      
-      const setChecked = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) el.checked = val;
-      };
-      const setValue = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) el.value = val;
-      };
-
-      setValue("editLinkId", link.id);
-      setValue("editLinkCode", link.id);
-      setValue("editLinkTitle", link.title || "");
-      setValue("editLinkUrl", link.originalUrl || "");
-      setChecked("editLinkStatus", link.status !== false);
-      
-      // Load Advanced Options into Edit Modal fields
-      setChecked("editLinkAdsCountdownEnabled", link.adsCountdownEnabled !== false);
-      setChecked("editLinkCloakingEnabled", link.linkCloakingEnabled === true);
-      setChecked("editLinkExternalBrowserEnabled", link.externalBrowserEnabled === true);
-      setChecked("editLinkPasswordProtectionEnabled", link.passwordProtectionEnabled === true);
-      setValue("editLinkPasswordValue", link.passwordProtectionValue || "");
-      setValue("editLinkOgTitle", link.ogTitle || "");
-      setValue("editLinkOgDescription", link.ogDescription || "");
-      setValue("editLinkOgImageUrl", link.ogImageUrl || "");
-      
-      setChecked("editLinkDeviceRedirectEnabled", link.deviceRedirectEnabled === true);
-      setValue("editLinkDesktopUrl", link.desktopUrl || "");
-      setValue("editLinkAndroidUrl", link.androidUrl || "");
-      setValue("editLinkIosUrl", link.iosUrl || "");
-      
-      setChecked("editLinkGeoRedirectEnabled", link.geoRedirectEnabled === true);
-      setValue("editLinkGeoDefaultUrl", link.geoDefaultUrl || "");
-      
-      // Populate geo rules list in edit form
-      const editGeoRulesListContainer = document.getElementById("editGeoRulesListContainer");
-      if (editGeoRulesListContainer) {
-        editGeoRulesListContainer.innerHTML = "";
-        if (link.geoRules) {
-          Object.entries(link.geoRules).forEach(([country, destUrl]) => {
-            addGeoRuleRow(editGeoRulesListContainer, country, destUrl);
-          });
-        }
-      }
-      
-      // Ad setup options
-      setValue("editLinkAdSetupOption", link.adSetupOption || "default");
-      setValue("editLinkAdSetupId", link.adSetupId || "");
-      
-      const manual = link.manualAdSettings || {};
-      setValue("editManualCountdown", manual.countdown || 10);
-      setChecked("editManualAutoRedirect", manual.autoRedirect !== false);
-      setValue("editManualButtonText", manual.continueButtonText || "Click to Continue");
-      
-      setValue("editManualHeaderAdScript", manual.headerAdScript || "");
-      setChecked("editManualHeaderAdEnabled", manual.headerAdEnabled === true);
-      setValue("editManualBodyAdScript", manual.bodyAdScript || "");
-      setChecked("editManualBodyAdEnabled", manual.bodyAdEnabled === true);
-      setValue("editManualFooterAdScript", manual.footerAdScript || "");
-      setChecked("editManualFooterAdEnabled", manual.footerAdEnabled === true);
-      setValue("editManualCustomAdScript", manual.customAdScript || "");
-      setChecked("editManualCustomAdEnabled", manual.customAdEnabled === true);
-      
-      // Trigger change events to display/hide appropriate subfields dynamically
-      const triggerChange = (id) => {
-        const el = document.getElementById(id);
-        if (el) el.dispatchEvent(new Event("change"));
-      };
-      triggerChange("editLinkPasswordProtectionEnabled");
-      triggerChange("editLinkDeviceRedirectEnabled");
-      triggerChange("editLinkGeoRedirectEnabled");
-      triggerChange("editLinkAdSetupOption");
- 
-      // Expand/Collapse clean state
-      const advancedContainer = document.getElementById("editAdvancedOptionsContainer");
-      if (advancedContainer) advancedContainer.classList.add("hidden");
-      
-      const advancedChevron = document.getElementById("editAdvancedOptionsChevron");
-      if (advancedChevron) advancedChevron.style.transform = "rotate(0deg)";
-      
-      const advancedBtn = document.getElementById("toggleEditAdvancedOptionsBtn");
-      if (advancedBtn) advancedBtn.classList.remove("active");
- 
-      if (editModal) editModal.classList.add("active");
-    });
-  });
-
-  document.querySelectorAll(".delete-link-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-id");
-      deleteLinkId.value = id;
-      deleteLinkDisplay.textContent = `/${id}`;
-      deleteModal.classList.add("active");
-    });
+    }
   });
 }
 
-searchInput.addEventListener("input", () => {
-  renderLinksTable(linksCache);
-});
+if (searchInput) {
+  searchInput.addEventListener("input", () => {
+    renderLinksTable(linksCache);
+  });
+}
 
 function escapeHTML(str) {
   return str.replace(/[&<>'"]/g, 
@@ -750,14 +781,15 @@ function debounce(func, wait) {
 
 // Monitor Paste or blur on Original URL input to automatically resolve webpage title
 const handleUrlInput = async () => {
+  if (!originalUrlInput) return;
   const url = originalUrlInput.value.trim();
   if (!url) return;
   if (!url.startsWith("http://") && !url.startsWith("https://")) return;
   
   // If title is already typed by user, do not override
-  if (linkTitleInput.value.trim()) return;
+  if (linkTitleInput && linkTitleInput.value.trim()) return;
 
-  titleLoadingSpinner.classList.remove("hidden");
+  if (titleLoadingSpinner) titleLoadingSpinner.classList.remove("hidden");
   
   try {
     // Utilize public CORS proxy
@@ -771,7 +803,7 @@ const handleUrlInput = async () => {
       const docParsed = parser.parseFromString(data.contents, "text/html");
       const title = docParsed.title || docParsed.querySelector("title")?.textContent || "";
       
-      if (title.trim()) {
+      if (title.trim() && linkTitleInput) {
         linkTitleInput.value = title.trim();
         showToast("Webpage title resolved automatically!", "success");
       }
@@ -779,23 +811,29 @@ const handleUrlInput = async () => {
   } catch (err) {
     console.warn("Failed to automatically query webpage metadata:", err);
   } finally {
-    titleLoadingSpinner.classList.add("hidden");
+    if (titleLoadingSpinner) titleLoadingSpinner.classList.add("hidden");
   }
 };
 
-originalUrlInput.addEventListener("blur", handleUrlInput);
-originalUrlInput.addEventListener("input", debounce(handleUrlInput, 1200));
+if (originalUrlInput) {
+  originalUrlInput.addEventListener("blur", handleUrlInput);
+  originalUrlInput.addEventListener("input", debounce(handleUrlInput, 1200));
+}
 
-customCodeInput.addEventListener("keypress", (e) => {
-  const char = String.fromCharCode(e.which);
-  if (!/^[a-zA-Z0-9-_]+$/.test(char)) {
-    e.preventDefault();
-  }
-});
+if (customCodeInput) {
+  customCodeInput.addEventListener("keypress", (e) => {
+    const char = String.fromCharCode(e.which);
+    if (!/^[a-zA-Z0-9-_]+$/.test(char)) {
+      e.preventDefault();
+    }
+  });
+}
 
-generateCodeBtn.addEventListener("click", () => {
-  customCodeInput.value = generateRandomCode();
-});
+if (generateCodeBtn && customCodeInput) {
+  generateCodeBtn.addEventListener("click", () => {
+    customCodeInput.value = generateRandomCode();
+  });
+}
 
 // ----------------------------------------------------
 // Advanced Options Form Binders
@@ -806,36 +844,40 @@ const toggleAdvancedOptionsBtn = document.getElementById("toggleAdvancedOptionsB
 const advancedOptionsContainer = document.getElementById("advancedOptionsContainer");
 const advancedOptionsChevron = document.getElementById("advancedOptionsChevron");
 
-toggleAdvancedOptionsBtn.addEventListener("click", () => {
-  const isHidden = advancedOptionsContainer.classList.contains("hidden");
-  if (isHidden) {
-    advancedOptionsContainer.classList.remove("hidden");
-    advancedOptionsChevron.style.transform = "rotate(180deg)";
-    toggleAdvancedOptionsBtn.classList.add("active");
-  } else {
-    advancedOptionsContainer.classList.add("hidden");
-    advancedOptionsChevron.style.transform = "rotate(0deg)";
-    toggleAdvancedOptionsBtn.classList.remove("active");
-  }
-});
+if (toggleAdvancedOptionsBtn && advancedOptionsContainer && advancedOptionsChevron) {
+  toggleAdvancedOptionsBtn.addEventListener("click", () => {
+    const isHidden = advancedOptionsContainer.classList.contains("hidden");
+    if (isHidden) {
+      advancedOptionsContainer.classList.remove("hidden");
+      advancedOptionsChevron.style.transform = "rotate(180deg)";
+      toggleAdvancedOptionsBtn.classList.add("active");
+    } else {
+      advancedOptionsContainer.classList.add("hidden");
+      advancedOptionsChevron.style.transform = "rotate(0deg)";
+      toggleAdvancedOptionsBtn.classList.remove("active");
+    }
+  });
+}
 
 // Toggle Advanced Options in Edit Link form
 const toggleEditAdvancedOptionsBtn = document.getElementById("toggleEditAdvancedOptionsBtn");
 const editAdvancedOptionsContainer = document.getElementById("editAdvancedOptionsContainer");
 const editAdvancedOptionsChevron = document.getElementById("editAdvancedOptionsChevron");
 
-toggleEditAdvancedOptionsBtn.addEventListener("click", () => {
-  const isHidden = editAdvancedOptionsContainer.classList.contains("hidden");
-  if (isHidden) {
-    editAdvancedOptionsContainer.classList.remove("hidden");
-    editAdvancedOptionsChevron.style.transform = "rotate(180deg)";
-    toggleEditAdvancedOptionsBtn.classList.add("active");
-  } else {
-    editAdvancedOptionsContainer.classList.add("hidden");
-    editAdvancedOptionsChevron.style.transform = "rotate(0deg)";
-    toggleEditAdvancedOptionsBtn.classList.remove("active");
-  }
-});
+if (toggleEditAdvancedOptionsBtn && editAdvancedOptionsContainer && editAdvancedOptionsChevron) {
+  toggleEditAdvancedOptionsBtn.addEventListener("click", () => {
+    const isHidden = editAdvancedOptionsContainer.classList.contains("hidden");
+    if (isHidden) {
+      editAdvancedOptionsContainer.classList.remove("hidden");
+      editAdvancedOptionsChevron.style.transform = "rotate(180deg)";
+      toggleEditAdvancedOptionsBtn.classList.add("active");
+    } else {
+      editAdvancedOptionsContainer.classList.add("hidden");
+      editAdvancedOptionsChevron.style.transform = "rotate(0deg)";
+      toggleEditAdvancedOptionsBtn.classList.remove("active");
+    }
+  });
+}
 
 // General binder for toggles (switch to show/hide detailed fields)
 function bindToggleField(checkboxId, targetId) {
@@ -899,16 +941,23 @@ function addGeoRuleRow(container, country = "", url = "") {
   container.appendChild(row);
 }
 
-document.getElementById("addGeoRuleBtn").addEventListener("click", () => {
-  addGeoRuleRow(document.getElementById("geoRulesListContainer"));
-});
+const addGeoRuleBtn = document.getElementById("addGeoRuleBtn");
+if (addGeoRuleBtn) {
+  addGeoRuleBtn.addEventListener("click", () => {
+    addGeoRuleRow(document.getElementById("geoRulesListContainer"));
+  });
+}
 
-document.getElementById("editAddGeoRuleBtn").addEventListener("click", () => {
-  addGeoRuleRow(document.getElementById("editGeoRulesListContainer"));
-});
+const editAddGeoRuleBtn = document.getElementById("editAddGeoRuleBtn");
+if (editAddGeoRuleBtn) {
+  editAddGeoRuleBtn.addEventListener("click", () => {
+    addGeoRuleRow(document.getElementById("editGeoRulesListContainer"));
+  });
+}
 
 // Creation form submit
-createLinkForm.addEventListener("submit", async (e) => {
+if (createLinkForm) {
+  createLinkForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   
   const originalUrl = originalUrlInput.value.trim();
@@ -1064,15 +1113,18 @@ createLinkForm.addEventListener("submit", async (e) => {
     createLinkSubmitBtn.innerHTML = `<span>Create Shortened Link</span>`;
   }
 });
+}
 
-copyResultBtn.addEventListener("click", () => {
-  const url = resultShortUrl.value;
-  navigator.clipboard.writeText(url).then(() => {
-    showToast("Copied to clipboard!", "success");
-  }).catch(() => {
-    showToast("Failed to copy link.", "error");
+if (copyResultBtn) {
+  copyResultBtn.addEventListener("click", () => {
+    const url = resultShortUrl.value;
+    navigator.clipboard.writeText(url).then(() => {
+      showToast("Copied to clipboard!", "success");
+    }).catch(() => {
+      showToast("Failed to copy link.", "error");
+    });
   });
-});
+}
 
 // ----------------------------------------------------
 // 4. Modals Management Flow
@@ -1215,28 +1267,30 @@ if (editLinkForm) {
 }
 
 // Handle Delete Action Trigger
-confirmDeleteBtn.addEventListener("click", async () => {
-  const id = deleteLinkId.value;
-  if (!id) return;
-  
-  confirmDeleteBtn.disabled = true;
-  confirmDeleteBtn.innerHTML = `<div class="spinner"></div> Deleting...`;
-  
-  try {
-    const docRef = doc(db, "links", id);
-    await deleteDoc(docRef);
+if (confirmDeleteBtn) {
+  confirmDeleteBtn.addEventListener("click", async () => {
+    const id = deleteLinkId.value;
+    if (!id) return;
     
-    showToast("Link deleted successfully.", "success");
-    logActivity("warning", `Permanently deleted short link: /${id}`);
-    closeDeleteModal();
-  } catch (err) {
-    console.error("Delete link error:", err);
-    showToast("Failed to delete short link.", "error");
-  } finally {
-    confirmDeleteBtn.disabled = false;
-    confirmDeleteBtn.innerHTML = `Delete Link`;
-  }
-});
+    confirmDeleteBtn.disabled = true;
+    confirmDeleteBtn.innerHTML = `<div class="spinner"></div> Deleting...`;
+    
+    try {
+      const docRef = doc(db, "links", id);
+      await deleteDoc(docRef);
+      
+      showToast("Link deleted successfully.", "success");
+      logActivity("warning", `Permanently deleted short link: /${id}`);
+      closeDeleteModal();
+    } catch (err) {
+      console.error("Delete link error:", err);
+      showToast("Failed to delete short link.", "error");
+    } finally {
+      confirmDeleteBtn.disabled = false;
+      confirmDeleteBtn.innerHTML = `Delete Link`;
+    }
+  });
+}
 
 window.addEventListener("click", (e) => {
   if (e.target === editModal) closeEditModal();
@@ -1570,6 +1624,14 @@ document.addEventListener("submit", async (e) => {
 // ----------------------------------------------------
 
 function bindNotifications() {
+  if (unsubscribeNotifications) {
+    try {
+      unsubscribeNotifications();
+    } catch (e) {
+      console.warn("Error unsubscribing notifications listener:", e);
+    }
+    unsubscribeNotifications = null;
+  }
   const q = query(
     collection(db, "notifications"), 
     orderBy("timestamp", "desc"),
@@ -1649,51 +1711,59 @@ function renderNotificationsList() {
 }
 
 // Toggle notification panel visibility
-notificationBellBtn.addEventListener("click", async () => {
-  notificationPanel.classList.toggle("active");
-  
-  // Mark all unread elements as read when drawer is opened
-  if (notificationPanel.classList.contains("active")) {
-    const unread = loadedNotifications.filter(n => n.read === false);
-    if (unread.length > 0) {
-      const batchPromise = unread.map(n => 
-        updateDoc(doc(db, "notifications", n.id), { read: true })
-      );
-      await Promise.all(batchPromise);
+if (notificationBellBtn && notificationPanel) {
+  notificationBellBtn.addEventListener("click", async () => {
+    notificationPanel.classList.toggle("active");
+    
+    // Mark all unread elements as read when drawer is opened
+    if (notificationPanel.classList.contains("active")) {
+      const unread = loadedNotifications.filter(n => n.read === false);
+      if (unread.length > 0) {
+        const batchPromise = unread.map(n => 
+          updateDoc(doc(db, "notifications", n.id), { read: true })
+        );
+        await Promise.all(batchPromise);
+      }
     }
-  }
-});
+  });
+}
 
 // Close panel click triggers
-closeNotificationPanelBtn.addEventListener("click", () => {
-  notificationPanel.classList.remove("active");
-});
+if (closeNotificationPanelBtn && notificationPanel) {
+  closeNotificationPanelBtn.addEventListener("click", () => {
+    notificationPanel.classList.remove("active");
+  });
+}
 
 // Clear all notifications click
-clearAllNotificationsBtn.addEventListener("click", async () => {
-  if (loadedNotifications.length === 0) return;
-  
-  clearAllNotificationsBtn.disabled = true;
-  clearAllNotificationsBtn.textContent = "Clearing...";
-  
-  try {
-    const batchPromises = loadedNotifications.map(n => 
-      deleteDoc(doc(db, "notifications", n.id))
-    );
-    await Promise.all(batchPromises);
-    showToast("Notifications cleared.", "info");
-  } catch (err) {
-    showToast("Error clearing logs.", "error");
-  } finally {
-    clearAllNotificationsBtn.disabled = false;
-    clearAllNotificationsBtn.textContent = "Clear All";
-  }
-});
+if (clearAllNotificationsBtn) {
+  clearAllNotificationsBtn.addEventListener("click", async () => {
+    if (loadedNotifications.length === 0) return;
+    
+    clearAllNotificationsBtn.disabled = true;
+    clearAllNotificationsBtn.textContent = "Clearing...";
+    
+    try {
+      const batchPromises = loadedNotifications.map(n => 
+        deleteDoc(doc(db, "notifications", n.id))
+      );
+      await Promise.all(batchPromises);
+      showToast("Notifications cleared.", "info");
+    } catch (err) {
+      showToast("Error clearing logs.", "error");
+    } finally {
+      clearAllNotificationsBtn.disabled = false;
+      clearAllNotificationsBtn.textContent = "Clear All";
+    }
+  });
+}
 
 // Close drawers if clicking outside the container
 window.addEventListener("click", (e) => {
-  if (!notificationPanel.contains(e.target) && !notificationBellContainer.contains(e.target)) {
-    notificationPanel.classList.remove("active");
+  if (notificationPanel && notificationBellContainer) {
+    if (!notificationPanel.contains(e.target) && !notificationBellContainer.contains(e.target)) {
+      notificationPanel.classList.remove("active");
+    }
   }
 });
 

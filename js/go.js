@@ -1,5 +1,5 @@
 window.firebaseAppLoaded = true;
-import { db } from "./firebase-config.js";
+import { auth, db } from "./firebase-config.js";
 import { 
   doc, 
   getDoc, 
@@ -258,9 +258,11 @@ async function initRedirection() {
           isFrameableResult = res;
           if (!res) {
             console.log("[go.js] Target URL blocks iframe framing. Automatically disabling cloaking...");
-            updateDoc(linkDocRef, {
-              linkCloakingEnabled: false
-            }).catch(err => console.warn("Failed to disable link cloaking in database:", err));
+            if (auth.currentUser) {
+              updateDoc(linkDocRef, {
+                linkCloakingEnabled: false
+              }).catch(err => console.warn("Failed to disable link cloaking in database:", err));
+            }
           }
         });
       }

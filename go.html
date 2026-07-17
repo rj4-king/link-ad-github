@@ -92,6 +92,15 @@
         <span class="ad-badge-label">Sponsored Content</span>
         <div id="missingAdContainerHeader" class="w-full"></div>
       </div>
+      
+      <!-- Visual Card explaining the empty state/invalid link -->
+      <div class="glass-card redirect-card" style="max-width: 440px; padding: 3rem 2rem; margin: 0 auto;">
+        <div style="font-size: 3.5rem; margin-bottom: 1.25rem;">🔍</div>
+        <h2>Short Link Not Found</h2>
+        <p class="text-secondary mt-2" style="font-size: 0.95rem;">The short URL you are trying to visit does not exist, has been disabled, or is expired.</p>
+        <a href="./index.html" class="btn btn-secondary mt-6 w-full">Go to Admin Dashboard</a>
+      </div>
+
       <div id="missingAdSpaceBody" class="ad-space hidden">
         <span class="ad-badge-label">Sponsored Content</span>
         <div id="missingAdContainerBody" class="w-full"></div>
@@ -104,6 +113,8 @@
         <span class="ad-badge-label">Sponsored Content</span>
         <div id="missingAdContainerExtra" class="w-full"></div>
       </div>
+    </div>
+
     <!-- 5. Password Prompt Card (Shown if link is password protected) -->
     <div id="passwordView" class="glass-card redirect-card hidden" style="max-width: 440px; padding: 3rem 2rem; margin: 0 auto;">
       <div style="font-size: 3.5rem; margin-bottom: 1.25rem;">🔒</div>
@@ -221,14 +232,58 @@
 
             if (linkData && linkData.fields && linkData.fields.originalUrl && linkData.fields.status?.booleanValue !== false) {
               let destUrl = linkData.fields.originalUrl.stringValue;
+              
+              // Device Redirection in fail-safe script
+              if (linkData.fields.deviceRedirectEnabled?.booleanValue === true) {
+                const ua = navigator.userAgent || navigator.vendor || window.opera;
+                if (/android/i.test(ua)) {
+                  if (linkData.fields.androidUrl?.stringValue) destUrl = linkData.fields.androidUrl.stringValue;
+                } else if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) {
+                  if (linkData.fields.iosUrl?.stringValue) destUrl = linkData.fields.iosUrl.stringValue;
+                } else {
+                  if (linkData.fields.desktopUrl?.stringValue) destUrl = linkData.fields.desktopUrl.stringValue;
+                }
+              }
+
               if (destUrl && !/^https?:\/\//i.test(destUrl)) {
                 destUrl = "https://" + destUrl;
               }
-              console.log("[Backup Redirect] Fallback trigger successful. Routing to:", destUrl);
-              console.log("Current Page: PAGE: Short Link Redirect");
-              const debugLabel = document.getElementById("debugPageLabel");
-              if (debugLabel) debugLabel.textContent = "PAGE: Short Link Redirect";
-              window.location.href = destUrl;
+
+              // Password Protection check in fail-safe script
+              if (linkData.fields.passwordProtectionEnabled?.booleanValue === true) {
+                console.log("[Backup Redirect] Link is password protected. Showing prompt...");
+                if (skeletonView) skeletonView.classList.add("hidden");
+                const passwordView = document.getElementById("passwordView");
+                if (passwordView) passwordView.classList.remove("hidden");
+                
+                const passwordForm = document.getElementById("passwordForm");
+                if (passwordForm) {
+                  passwordForm.onsubmit = function(e) {
+                    e.preventDefault();
+                    const enteredPassword = document.getElementById("passwordInput").value;
+                    const correctPassword = linkData.fields.passwordProtectionValue?.stringValue;
+                    if (enteredPassword === correctPassword) {
+                      const passwordError = document.getElementById("passwordError");
+                      if (passwordError) passwordError.classList.add("hidden");
+                      if (passwordView) passwordView.classList.add("hidden");
+                      console.log("[Backup Redirect] Password correct. Routing to:", destUrl);
+                      window.location.href = destUrl;
+                    } else {
+                      const passwordError = document.getElementById("passwordError");
+                      if (passwordError) {
+                        passwordError.textContent = "Incorrect password. Please try again.";
+                        passwordError.classList.remove("hidden");
+                      }
+                    }
+                  };
+                }
+              } else {
+                console.log("[Backup Redirect] Fallback trigger successful. Routing to:", destUrl);
+                console.log("Current Page: PAGE: Short Link Redirect");
+                const debugLabel = document.getElementById("debugPageLabel");
+                if (debugLabel) debugLabel.textContent = "PAGE: Short Link Redirect";
+                window.location.href = destUrl;
+              }
             } else {
               // If the short code does not exist, show the missing link/ads-only view
               console.log("[Backup Redirect] Short link code does not exist. Rendering missing link fallback page...");
