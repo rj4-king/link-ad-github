@@ -1330,14 +1330,14 @@ function loadSetupIntoForm(setupId) {
   settingCustomAdScript.value = setup.customAdScript || "";
   settingCustomAdEnabled.checked = setup.customAdEnabled === true;
 
-  // Lock "Set as Default" if it is the default setup or named default
-  if (setup.id === "default" || setup.isDefault) {
-    setupIsDefaultInput.disabled = true;
-    setupEnabledInput.disabled = true;
+  // Disable toggle only if this setup is already the default (prevent having no default setup)
+  setupIsDefaultInput.disabled = (setup.isDefault === true);
+  
+  if (setup.id === "default") {
+    setupEnabledInput.disabled = true; // Default setup must always be active
     deleteAdSetupBtn.classList.add("hidden");
     setupNameInput.disabled = true;
   } else {
-    setupIsDefaultInput.disabled = false;
     setupEnabledInput.disabled = false;
     deleteAdSetupBtn.classList.remove("hidden");
     setupNameInput.disabled = false;
