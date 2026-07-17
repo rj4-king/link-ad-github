@@ -85,14 +85,7 @@ class AdSettingsComponent extends HTMLElement {
               </div>
             </div>
 
-            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
-              <div class="form-group" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: center;">
-                <label class="form-label" style="margin-bottom: 0.5rem;">Message Page</label>
-                <label class="switch">
-                  <input type="checkbox" id="settingMessagePageEnabled">
-                  <span class="slider"></span>
-                </label>
-              </div>
+            <div class="form-row" style="margin-bottom: 1.25rem;">
               <div class="form-group" style="margin-bottom: 0;">
                 <label for="settingButtonText" class="form-label">Continue Button Text</label>
                 <input type="text" id="settingButtonText" class="form-input" placeholder="Click to Continue" required>
@@ -262,7 +255,6 @@ let setupIsDefaultInput = null;
 let setupEnabledInput = null;
 let settingCountdownInput = null;
 let settingAutoRedirectInput = null;
-let settingMessagePageEnabledInput = null;
 let settingButtonTextInput = null;
 let deleteAdSetupBtn = null;
 let saveAdSetupBtn = null;
@@ -293,7 +285,6 @@ function initSettingsDOMBindings() {
   setupEnabledInput = document.getElementById("setupEnabled");
   settingCountdownInput = document.getElementById("settingCountdown");
   settingAutoRedirectInput = document.getElementById("settingAutoRedirect");
-  settingMessagePageEnabledInput = document.getElementById("settingMessagePageEnabled");
   settingButtonTextInput = document.getElementById("settingButtonText");
   deleteAdSetupBtn = document.getElementById("deleteAdSetupBtn");
   saveAdSetupBtn = document.getElementById("saveSettingsBtn");
@@ -641,10 +632,6 @@ function attachTableEventListeners() {
       // Load Advanced Options into Edit Modal fields
       document.getElementById("editLinkAdsCountdownEnabled").checked = link.adsCountdownEnabled !== false;
       document.getElementById("editLinkCloakingEnabled").checked = link.linkCloakingEnabled === true;
-      document.getElementById("editLinkMessagePageEnabled").checked = link.messagePageEnabled === true;
-      document.getElementById("editLinkMessagePageTitle").value = link.messagePageTitle || "Confirm Redirection";
-      document.getElementById("editLinkMessagePageText").value = link.messagePageText || "Please confirm to continue to your destination.";
-      document.getElementById("editLinkMessagePageButton").value = link.messagePageButton || "Continue";
       document.getElementById("editLinkExternalBrowserEnabled").checked = link.externalBrowserEnabled === true;
       document.getElementById("editLinkPasswordProtectionEnabled").checked = link.passwordProtectionEnabled === true;
       document.getElementById("editLinkPasswordValue").value = link.passwordProtectionValue || "";
@@ -688,7 +675,6 @@ function attachTableEventListeners() {
       document.getElementById("editManualCustomAdEnabled").checked = manual.customAdEnabled === true;
       
       // Trigger change events to display/hide appropriate subfields dynamically
-      document.getElementById("editLinkMessagePageEnabled").dispatchEvent(new Event("change"));
       document.getElementById("editLinkPasswordProtectionEnabled").dispatchEvent(new Event("change"));
       document.getElementById("editLinkDeviceRedirectEnabled").dispatchEvent(new Event("change"));
       document.getElementById("editLinkGeoRedirectEnabled").dispatchEvent(new Event("change"));
@@ -845,12 +831,10 @@ function bindToggleField(checkboxId, targetId) {
   });
 }
 
-bindToggleField("linkMessagePageEnabled", "linkMessagePageFields");
 bindToggleField("linkPasswordProtectionEnabled", "linkPasswordFields");
 bindToggleField("linkDeviceRedirectEnabled", "linkDeviceFields");
 bindToggleField("linkGeoRedirectEnabled", "linkGeoFields");
 
-bindToggleField("editLinkMessagePageEnabled", "editLinkMessagePageFields");
 bindToggleField("editLinkPasswordProtectionEnabled", "editLinkPasswordFields");
 bindToggleField("editLinkDeviceRedirectEnabled", "editLinkDeviceFields");
 bindToggleField("editLinkGeoRedirectEnabled", "editLinkGeoFields");
@@ -1000,10 +984,6 @@ createLinkForm.addEventListener("submit", async (e) => {
       // Advanced options
       adsCountdownEnabled: document.getElementById("linkAdsCountdownEnabled").checked,
       linkCloakingEnabled: document.getElementById("linkCloakingEnabled").checked,
-      messagePageEnabled: document.getElementById("linkMessagePageEnabled").checked,
-      messagePageTitle: document.getElementById("linkMessagePageTitle").value.trim() || "Confirm Redirection",
-      messagePageText: document.getElementById("linkMessagePageText").value.trim() || "Please confirm to continue to your destination.",
-      messagePageButton: document.getElementById("linkMessagePageButton").value.trim() || "Continue",
       externalBrowserEnabled: document.getElementById("linkExternalBrowserEnabled").checked,
       passwordProtectionEnabled: document.getElementById("linkPasswordProtectionEnabled").checked,
       passwordProtectionValue: document.getElementById("linkPasswordValue").value.trim(),
@@ -1048,7 +1028,6 @@ createLinkForm.addEventListener("submit", async (e) => {
     toggleAdvancedOptionsBtn.classList.remove("active");
     
     // Hide all expanded fields
-    document.getElementById("linkMessagePageFields").classList.add("hidden");
     document.getElementById("linkPasswordFields").classList.add("hidden");
     document.getElementById("linkDeviceFields").classList.add("hidden");
     document.getElementById("linkGeoFields").classList.add("hidden");
@@ -1164,10 +1143,6 @@ editLinkForm.addEventListener("submit", async (e) => {
       // Advanced options
       adsCountdownEnabled: document.getElementById("editLinkAdsCountdownEnabled").checked,
       linkCloakingEnabled: document.getElementById("editLinkCloakingEnabled").checked,
-      messagePageEnabled: document.getElementById("editLinkMessagePageEnabled").checked,
-      messagePageTitle: document.getElementById("editLinkMessagePageTitle").value.trim() || "Confirm Redirection",
-      messagePageText: document.getElementById("editLinkMessagePageText").value.trim() || "Please confirm to continue to your destination.",
-      messagePageButton: document.getElementById("editLinkMessagePageButton").value.trim() || "Continue",
       externalBrowserEnabled: document.getElementById("editLinkExternalBrowserEnabled").checked,
       passwordProtectionEnabled: document.getElementById("editLinkPasswordProtectionEnabled").checked,
       passwordProtectionValue: document.getElementById("editLinkPasswordValue").value.trim(),
@@ -1344,7 +1319,6 @@ function loadSetupIntoForm(setupId) {
   setupEnabledInput.checked = setup.enabled !== false;
   settingCountdownInput.value = setup.countdown || 10;
   settingAutoRedirectInput.checked = setup.autoRedirect !== false;
-  settingMessagePageEnabledInput.checked = setup.messagePageEnabled === true;
   settingButtonTextInput.value = setup.continueButtonText || "Click to Continue";
   
   settingHeaderAdScript.value = setup.headerAdScript || "";
@@ -1396,7 +1370,6 @@ document.addEventListener("click", (e) => {
     setupEnabledInput.disabled = false;
     settingCountdownInput.value = 10;
     settingAutoRedirectInput.checked = true;
-    settingMessagePageEnabledInput.checked = false;
     settingButtonTextInput.value = "Click to Continue";
     
     settingHeaderAdScript.value = "";
@@ -1467,7 +1440,6 @@ document.addEventListener("submit", async (e) => {
     const enabled = setupEnabledInput.checked;
     const countdown = parseInt(settingCountdownInput.value);
     const autoRedirect = settingAutoRedirectInput.checked;
-    const messagePageEnabled = settingMessagePageEnabledInput.checked;
     const continueButtonText = settingButtonTextInput.value.trim();
     
     const headerAdScript = settingHeaderAdScript.value;
@@ -1490,7 +1462,7 @@ document.addEventListener("submit", async (e) => {
     
     try {
       // 1. If this setup is set as default, clear the default flag on other setups first
-      if (isDefault && id !== "default") {
+      if (isDefault) {
         const batchPromises = adSetupsCache.map(async (s) => {
           if (s.id !== id && s.isDefault) {
             const docRef = doc(db, "adSetups", s.id);
@@ -1513,7 +1485,6 @@ document.addEventListener("submit", async (e) => {
         enabled,
         countdown,
         autoRedirect,
-        messagePageEnabled,
         continueButtonText,
         headerAdScript,
         headerAdEnabled,

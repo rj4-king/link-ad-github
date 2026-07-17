@@ -6,7 +6,11 @@ import {
   updateDoc, 
   increment,
   addDoc,
-  collection
+  collection,
+  query,
+  where,
+  limit,
+  getDocs
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // DOM Elements
@@ -35,6 +39,7 @@ let autoRedirect = true;
 let customButtonText = "Click to Continue";
 let redirectionStarted = false;
 let fallbackTimer = null;
+let isFrameableResult = true;
 
 // ----------------------------------------------------
 // 1. Initialization and Parallel Data Lookup
@@ -211,34 +216,53 @@ async function initRedirection() {
       if (linkData.adSetupOption === "manual" && linkData.manualAdSettings) {
         adSetup = linkData.manualAdSettings;
       } else {
-        let setupId = "default";
+        let setupId = "";
         if (linkData.adSetupOption === "select" && linkData.adSetupId) {
           setupId = linkData.adSetupId;
         }
         
-        try {
-          const setupDocRef = doc(db, "adSetups", setupId);
-          const setupDocSnap = await getDoc(setupDocRef);
-          if (setupDocSnap.exists() && setupDocSnap.data().enabled !== false) {
-            adSetup = setupDocSnap.data();
+        if (setupId) {
+          try {
+            const setupDocRef = doc(db, "adSetups", setupId);
+            const setupDocSnap = await getDoc(setupDocRef);
+            if (setupDocSnap.exists() && setupDocSnap.data().enabled !== false) {
+              adSetup = setupDocSnap.data();
+            }
+          } catch (e) {
+            console.warn("Failed to query custom ad setup, falling back to default...", e);
           }
-        } catch (e) {
-          console.warn("Failed to query custom ad setup, falling back to default...", e);
         }
         
+        // Fallback to active default setup (where isDefault == true)
         if (!adSetup) {
           try {
-            const defaultDocRef = doc(db, "adSetups", "default");
-            const defaultDocSnap = await getDoc(defaultDocRef);
-            if (defaultDocSnap.exists()) {
-              adSetup = defaultDocSnap.data();
+            const setupsCol = collection(db, "adSetups");
+            const q = query(setupsCol, where("isDefault", "==", true), limit(1));
+            const querySnap = await getDocs(q);
+            if (!querySnap.empty) {
+              adSetup = querySnap.docs[0].data();
             }
-          } catch (e) {}
+          } catch (e) {
+            console.warn("Failed to query default setup:", e);
+          }
         }
       }
 
       if (!adSetup) {
         adSetup = fallbackSettings;
+      }
+
+      // Run background pre-flight cloaking frameability check if cloaking is enabled
+      if (linkData.linkCloakingEnabled) {
+        checkIfFrameable(destinationUrl).then(res => {
+          isFrameableResult = res;
+          if (!res) {
+            console.log("[go.js] Target URL blocks iframe framing. Automatically disabling cloaking...");
+            updateDoc(linkDocRef, {
+              linkCloakingEnabled: false
+            }).catch(err => console.warn("Failed to disable link cloaking in database:", err));
+          }
+        });
       }
 
       // G. Password Protection checking
@@ -247,13 +271,19 @@ async function initRedirection() {
         const passwordView = document.getElementById("passwordView");
         passwordView.classList.remove("hidden");
         
+        const passwordError = document.getElementById("passwordError");
+        
         document.getElementById("passwordForm").addEventListener("submit", (e) => {
           e.preventDefault();
           const enteredPassword = document.getElementById("passwordInput").value;
           if (enteredPassword === linkData.passwordProtectionValue) {
+            if (passwordError) passwordError.classList.add("hidden");
             proceedToCountdown(linkData, adSetup);
           } else {
-            alert("Incorrect password. Please try again.");
+            if (passwordError) {
+              passwordError.textContent = "Incorrect password. Please try again.";
+              passwordError.classList.remove("hidden");
+            }
           }
         });
       } else {
@@ -280,20 +310,12 @@ function proceedToCountdown(linkData, adSetup) {
   // Hide password screen if any
   document.getElementById("passwordView").classList.add("hidden");
 
-  // Determine redirection details based on message page or standard ad config
+  // Determine redirection details based on standard ad config
   let pageTitle = adSetup.pageTitle || adSetup.name || "Redirecting...";
-  if (linkData.messagePageEnabled) {
-    pageTitle = linkData.messagePageTitle || "Confirm Redirection";
-    pageTitleDisplay.textContent = pageTitle;
-    pageSubtitleDisplay.textContent = linkData.messagePageText || "Please confirm to continue to your destination.";
-    customButtonText = linkData.messagePageButton || "Continue";
-    autoRedirect = false;
-  } else {
-    pageTitleDisplay.textContent = adSetup.pageTitle || adSetup.name || "Your link is almost ready...";
-    pageSubtitleDisplay.textContent = "Please wait for the timer to unlock the destination URL.";
-    customButtonText = adSetup.continueButtonText || "Click to Continue";
-    autoRedirect = adSetup.autoRedirect !== false;
-  }
+  pageTitleDisplay.textContent = adSetup.pageTitle || adSetup.name || "Your link is almost ready...";
+  pageSubtitleDisplay.textContent = "Please wait for the timer to unlock the destination URL.";
+  customButtonText = adSetup.continueButtonText || "Click to Continue";
+  autoRedirect = adSetup.autoRedirect !== false;
   document.title = pageTitle;
 
   totalTime = adSetup.countdown !== undefined ? adSetup.countdown : 10;
@@ -521,7 +543,7 @@ function attemptExternalBrowser(url) {
   
   if (/android/i.test(ua) && isInApp) {
     const cleanUrl = url.replace(/^https?:\/\//, "");
-    const intentUrl = `intent://${cleanUrl}#Intent;scheme=https;end;`;
+    const intentUrl = `intent://${cleanUrl}#Intent;scheme=https;action=android.intent.action.VIEW;package=com.android.chrome;end;`;
     window.location.href = intentUrl;
     
     setTimeout(() => {
@@ -542,32 +564,56 @@ function attemptExternalBrowser(url) {
   return false;
 }
 
+// Pre-flight check if website blocks iframe framing
+async function checkIfFrameable(url) {
+  try {
+    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
+    
+    const response = await fetch(proxyUrl, { 
+      method: "HEAD", 
+      signal: controller.signal 
+    });
+    clearTimeout(timeoutId);
+    
+    const xFrame = response.headers.get("x-frame-options") || response.headers.get("X-Frame-Options");
+    const csp = response.headers.get("content-security-policy") || response.headers.get("Content-Security-Policy");
+    
+    if (xFrame) {
+      const val = xFrame.toLowerCase();
+      if (val.includes("deny") || val.includes("sameorigin")) {
+        return false;
+      }
+    }
+    if (csp) {
+      const val = csp.toLowerCase();
+      if (val.includes("frame-ancestors")) {
+        if (val.includes("'none'") || val.includes("'self'")) {
+          return false;
+        }
+      }
+    }
+    return true;
+  } catch (err) {
+    console.warn("[go.js] Pre-flight frameable check failed or timed out. Defaulting to true:", err);
+    return true;
+  }
+}
+
 // Final Redirection Routing pipeline
 function triggerFinalRedirection(linkData) {
-  // A. Check if link cloaking is enabled
-  if (linkData.linkCloakingEnabled) {
+  // A. Check if link cloaking is enabled and frameable check passed
+  if (linkData.linkCloakingEnabled && isFrameableResult) {
     const cloakingView = document.getElementById("cloakingView");
     const cloakIframe = document.getElementById("cloakIframe");
-    const cloakTitle = document.getElementById("cloakTitle");
-    const cloakFavicon = document.getElementById("cloakFavicon");
-    const cloakDirectLink = document.getElementById("cloakDirectLink");
     
     if (cloakingView && cloakIframe) {
-      // Clear body overflow to prevent double scrollbars
       document.body.style.overflow = "hidden";
-      
-      // Update top-bar details
-      if (cloakTitle) cloakTitle.textContent = linkData.title || "Cloaked View";
-      if (cloakFavicon && linkData.faviconUrl) {
-        cloakFavicon.src = linkData.faviconUrl;
-        cloakFavicon.style.display = "inline";
-      }
-      if (cloakDirectLink) cloakDirectLink.href = destinationUrl;
-      
-      // Load iframe source
       cloakIframe.src = destinationUrl;
       
-      // Transition UI to cloaked screen
+      // Transition UI to cloaked screen (no exit bars or headers)
       countdownView.classList.add("hidden");
       cloakingView.classList.remove("hidden");
       return;
