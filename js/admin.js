@@ -623,69 +623,89 @@ function attachTableEventListeners() {
       const link = linksCache.find(l => l.id === id);
       if (!link) return;
       
-      editLinkId.value = link.id;
-      editLinkCode.value = link.id;
-      editLinkTitle.value = link.title || "";
-      editLinkUrl.value = link.originalUrl || "";
-      editLinkStatus.checked = link.status !== false;
+      const setChecked = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.checked = val;
+      };
+      const setValue = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val;
+      };
+
+      setValue("editLinkId", link.id);
+      setValue("editLinkCode", link.id);
+      setValue("editLinkTitle", link.title || "");
+      setValue("editLinkUrl", link.originalUrl || "");
+      setChecked("editLinkStatus", link.status !== false);
       
       // Load Advanced Options into Edit Modal fields
-      document.getElementById("editLinkAdsCountdownEnabled").checked = link.adsCountdownEnabled !== false;
-      document.getElementById("editLinkCloakingEnabled").checked = link.linkCloakingEnabled === true;
-      document.getElementById("editLinkExternalBrowserEnabled").checked = link.externalBrowserEnabled === true;
-      document.getElementById("editLinkPasswordProtectionEnabled").checked = link.passwordProtectionEnabled === true;
-      document.getElementById("editLinkPasswordValue").value = link.passwordProtectionValue || "";
-      document.getElementById("editLinkOgTitle").value = link.ogTitle || "";
-      document.getElementById("editLinkOgDescription").value = link.ogDescription || "";
-      document.getElementById("editLinkOgImageUrl").value = link.ogImageUrl || "";
+      setChecked("editLinkAdsCountdownEnabled", link.adsCountdownEnabled !== false);
+      setChecked("editLinkCloakingEnabled", link.linkCloakingEnabled === true);
+      setChecked("editLinkExternalBrowserEnabled", link.externalBrowserEnabled === true);
+      setChecked("editLinkPasswordProtectionEnabled", link.passwordProtectionEnabled === true);
+      setValue("editLinkPasswordValue", link.passwordProtectionValue || "");
+      setValue("editLinkOgTitle", link.ogTitle || "");
+      setValue("editLinkOgDescription", link.ogDescription || "");
+      setValue("editLinkOgImageUrl", link.ogImageUrl || "");
       
-      document.getElementById("editLinkDeviceRedirectEnabled").checked = link.deviceRedirectEnabled === true;
-      document.getElementById("editLinkDesktopUrl").value = link.desktopUrl || "";
-      document.getElementById("editLinkAndroidUrl").value = link.androidUrl || "";
-      document.getElementById("editLinkIosUrl").value = link.iosUrl || "";
+      setChecked("editLinkDeviceRedirectEnabled", link.deviceRedirectEnabled === true);
+      setValue("editLinkDesktopUrl", link.desktopUrl || "");
+      setValue("editLinkAndroidUrl", link.androidUrl || "");
+      setValue("editLinkIosUrl", link.iosUrl || "");
       
-      document.getElementById("editLinkGeoRedirectEnabled").checked = link.geoRedirectEnabled === true;
-      document.getElementById("editLinkGeoDefaultUrl").value = link.geoDefaultUrl || "";
+      setChecked("editLinkGeoRedirectEnabled", link.geoRedirectEnabled === true);
+      setValue("editLinkGeoDefaultUrl", link.geoDefaultUrl || "");
       
       // Populate geo rules list in edit form
       const editGeoRulesListContainer = document.getElementById("editGeoRulesListContainer");
-      editGeoRulesListContainer.innerHTML = "";
-      if (link.geoRules) {
-        Object.entries(link.geoRules).forEach(([country, destUrl]) => {
-          addGeoRuleRow(editGeoRulesListContainer, country, destUrl);
-        });
+      if (editGeoRulesListContainer) {
+        editGeoRulesListContainer.innerHTML = "";
+        if (link.geoRules) {
+          Object.entries(link.geoRules).forEach(([country, destUrl]) => {
+            addGeoRuleRow(editGeoRulesListContainer, country, destUrl);
+          });
+        }
       }
       
       // Ad setup options
-      document.getElementById("editLinkAdSetupOption").value = link.adSetupOption || "default";
-      document.getElementById("editLinkAdSetupId").value = link.adSetupId || "";
+      setValue("editLinkAdSetupOption", link.adSetupOption || "default");
+      setValue("editLinkAdSetupId", link.adSetupId || "");
       
       const manual = link.manualAdSettings || {};
-      document.getElementById("editManualCountdown").value = manual.countdown || 10;
-      document.getElementById("editManualAutoRedirect").checked = manual.autoRedirect !== false;
-      document.getElementById("editManualButtonText").value = manual.continueButtonText || "Click to Continue";
+      setValue("editManualCountdown", manual.countdown || 10);
+      setChecked("editManualAutoRedirect", manual.autoRedirect !== false);
+      setValue("editManualButtonText", manual.continueButtonText || "Click to Continue");
       
-      document.getElementById("editManualHeaderAdScript").value = manual.headerAdScript || "";
-      document.getElementById("editManualHeaderAdEnabled").checked = manual.headerAdEnabled === true;
-      document.getElementById("editManualBodyAdScript").value = manual.bodyAdScript || "";
-      document.getElementById("editManualBodyAdEnabled").checked = manual.bodyAdEnabled === true;
-      document.getElementById("editManualFooterAdScript").value = manual.footerAdScript || "";
-      document.getElementById("editManualFooterAdEnabled").checked = manual.footerAdEnabled === true;
-      document.getElementById("editManualCustomAdScript").value = manual.customAdScript || "";
-      document.getElementById("editManualCustomAdEnabled").checked = manual.customAdEnabled === true;
+      setValue("editManualHeaderAdScript", manual.headerAdScript || "");
+      setChecked("editManualHeaderAdEnabled", manual.headerAdEnabled === true);
+      setValue("editManualBodyAdScript", manual.bodyAdScript || "");
+      setChecked("editManualBodyAdEnabled", manual.bodyAdEnabled === true);
+      setValue("editManualFooterAdScript", manual.footerAdScript || "");
+      setChecked("editManualFooterAdEnabled", manual.footerAdEnabled === true);
+      setValue("editManualCustomAdScript", manual.customAdScript || "");
+      setChecked("editManualCustomAdEnabled", manual.customAdEnabled === true);
       
       // Trigger change events to display/hide appropriate subfields dynamically
-      document.getElementById("editLinkPasswordProtectionEnabled").dispatchEvent(new Event("change"));
-      document.getElementById("editLinkDeviceRedirectEnabled").dispatchEvent(new Event("change"));
-      document.getElementById("editLinkGeoRedirectEnabled").dispatchEvent(new Event("change"));
-      document.getElementById("editLinkAdSetupOption").dispatchEvent(new Event("change"));
-
+      const triggerChange = (id) => {
+        const el = document.getElementById(id);
+        if (el) el.dispatchEvent(new Event("change"));
+      };
+      triggerChange("editLinkPasswordProtectionEnabled");
+      triggerChange("editLinkDeviceRedirectEnabled");
+      triggerChange("editLinkGeoRedirectEnabled");
+      triggerChange("editLinkAdSetupOption");
+ 
       // Expand/Collapse clean state
-      document.getElementById("editAdvancedOptionsContainer").classList.add("hidden");
-      document.getElementById("editAdvancedOptionsChevron").style.transform = "rotate(0deg)";
-      document.getElementById("toggleEditAdvancedOptionsBtn").classList.remove("active");
-
-      editModal.classList.add("active");
+      const advancedContainer = document.getElementById("editAdvancedOptionsContainer");
+      if (advancedContainer) advancedContainer.classList.add("hidden");
+      
+      const advancedChevron = document.getElementById("editAdvancedOptionsChevron");
+      if (advancedChevron) advancedChevron.style.transform = "rotate(0deg)";
+      
+      const advancedBtn = document.getElementById("toggleEditAdvancedOptionsBtn");
+      if (advancedBtn) advancedBtn.classList.remove("active");
+ 
+      if (editModal) editModal.classList.add("active");
     });
   });
 
@@ -1059,121 +1079,140 @@ copyResultBtn.addEventListener("click", () => {
 // ----------------------------------------------------
 
 function closeEditModal() {
-  editModal.classList.remove("active");
-  editLinkForm.reset();
+  if (editModal) editModal.classList.remove("active");
+  if (editLinkForm) editLinkForm.reset();
 }
 
-closeEditModalBtn.addEventListener("click", closeEditModal);
-cancelEditBtn.addEventListener("click", closeEditModal);
+if (closeEditModalBtn) closeEditModalBtn.addEventListener("click", closeEditModal);
+if (cancelEditBtn) cancelEditBtn.addEventListener("click", closeEditModal);
+if (cancelDeleteBtn) cancelDeleteBtn.addEventListener("click", closeDeleteModal);
 
 function closeDeleteModal() {
-  deleteModal.classList.remove("active");
-  deleteLinkId.value = "";
-  deleteLinkDisplay.textContent = "";
+  if (deleteModal) deleteModal.classList.remove("active");
+  if (deleteLinkId) deleteLinkId.value = "";
+  if (deleteLinkDisplay) deleteLinkDisplay.textContent = "";
 }
 
-cancelDeleteBtn.addEventListener("click", closeDeleteModal);
-
 // Handle Edit Form Submit
-editLinkForm.addEventListener("submit", async (e) => {
+if (editLinkForm) {
+  editLinkForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   
-  const id = editLinkId.value;
-  const newTitle = editLinkTitle.value.trim();
-  const newUrl = editLinkUrl.value.trim();
-  const newStatus = editLinkStatus.checked;
-  
-  if (!newUrl.startsWith("http://") && !newUrl.startsWith("https://")) {
-    showToast("Destination URL must start with http:// or https://", "warning");
-    return;
-  }
-  
-  const saveEditBtn = document.getElementById("saveEditBtn");
-  saveEditBtn.disabled = true;
-  saveEditBtn.innerHTML = `<div class="spinner"></div> Saving...`;
-  
-  try {
-    // Re-resolve favicon URL
-    let faviconUrl = "";
-    try {
-      const parsedUrl = new URL(newUrl);
-      faviconUrl = `https://www.google.com/s2/favicons?sz=64&domain=${parsedUrl.hostname}`;
-    } catch (err) {
-      console.warn("Invalid original URL for favicon parsing", err);
-    }
-
-    // Compile Geo Redirect rules
-    const geoRules = {};
-    const geoRedirectEnabled = document.getElementById("editLinkGeoRedirectEnabled").checked;
-    if (geoRedirectEnabled) {
-      const rows = document.querySelectorAll("#editGeoRulesListContainer .geo-rule-row");
-      rows.forEach(row => {
-        const country = row.querySelector(".geo-country-input").value.trim().toUpperCase();
-        const url = row.querySelector(".geo-url-input").value.trim();
-        if (country && url) {
-          geoRules[country] = url;
-        }
-      });
-    }
-
-    // Compile Ad Setup Choice
-    const adSetupOption = document.getElementById("editLinkAdSetupOption").value;
-    const adSetupId = document.getElementById("editLinkAdSetupId").value;
-    const manualAdSettings = {
-      countdown: parseInt(document.getElementById("editManualCountdown").value) || 10,
-      autoRedirect: document.getElementById("editManualAutoRedirect").checked,
-      continueButtonText: document.getElementById("editManualButtonText").value.trim() || "Click to Continue",
-      headerAdScript: document.getElementById("editManualHeaderAdScript").value,
-      headerAdEnabled: document.getElementById("editManualHeaderAdEnabled").checked,
-      bodyAdScript: document.getElementById("editManualBodyAdScript").value,
-      bodyAdEnabled: document.getElementById("editManualBodyAdEnabled").checked,
-      footerAdScript: document.getElementById("editManualFooterAdScript").value,
-      footerAdEnabled: document.getElementById("editManualFooterAdEnabled").checked,
-      customAdScript: document.getElementById("editManualCustomAdScript").value,
-      customAdEnabled: document.getElementById("editManualCustomAdEnabled").checked
+    const getValue = (id, fallback = "") => {
+      const el = document.getElementById(id);
+      return el ? el.value.trim() : fallback;
+    };
+    const getChecked = (id, fallback = false) => {
+      const el = document.getElementById(id);
+      return el ? el.checked : fallback;
     };
 
-    const docRef = doc(db, "links", id);
-    await updateDoc(docRef, {
-      title: newTitle || `Short link for ${id}`,
-      originalUrl: newUrl,
-      status: newStatus,
-      faviconUrl: faviconUrl,
-
-      // Advanced options
-      adsCountdownEnabled: document.getElementById("editLinkAdsCountdownEnabled").checked,
-      linkCloakingEnabled: document.getElementById("editLinkCloakingEnabled").checked,
-      externalBrowserEnabled: document.getElementById("editLinkExternalBrowserEnabled").checked,
-      passwordProtectionEnabled: document.getElementById("editLinkPasswordProtectionEnabled").checked,
-      passwordProtectionValue: document.getElementById("editLinkPasswordValue").value.trim(),
-      ogTitle: document.getElementById("editLinkOgTitle").value.trim(),
-      ogDescription: document.getElementById("editLinkOgDescription").value.trim(),
-      ogImageUrl: document.getElementById("editLinkOgImageUrl").value.trim(),
-      deviceRedirectEnabled: document.getElementById("editLinkDeviceRedirectEnabled").checked,
-      desktopUrl: document.getElementById("editLinkDesktopUrl").value.trim(),
-      androidUrl: document.getElementById("editLinkAndroidUrl").value.trim(),
-      iosUrl: document.getElementById("editLinkIosUrl").value.trim(),
-      geoRedirectEnabled: geoRedirectEnabled,
-      geoRules: geoRules,
-      geoDefaultUrl: document.getElementById("editLinkGeoDefaultUrl").value.trim(),
-
-      // Ad setups linkage
-      adSetupOption: adSetupOption,
-      adSetupId: adSetupId,
-      manualAdSettings: manualAdSettings
-    });
+    const id = getValue("editLinkId");
+    const newTitle = getValue("editLinkTitle");
+    const newUrl = getValue("editLinkUrl");
+    const newStatus = getChecked("editLinkStatus", true);
     
-    showToast("Short link updated successfully!", "success");
-    logActivity("info", `Updated short link settings for /${id}: Title: '${newTitle}', URL: '${newUrl}', Active: ${newStatus}`);
-    closeEditModal();
-  } catch (err) {
-    console.error("Update link error:", err);
-    showToast("Failed to update short link.", "error");
-  } finally {
-    saveEditBtn.disabled = false;
-    saveEditBtn.innerHTML = `Save Changes`;
-  }
-});
+    if (!newUrl.startsWith("http://") && !newUrl.startsWith("https://")) {
+      showToast("Destination URL must start with http:// or https://", "warning");
+      return;
+    }
+    
+    const saveEditBtn = document.getElementById("saveEditBtn");
+    if (saveEditBtn) {
+      saveEditBtn.disabled = true;
+      saveEditBtn.innerHTML = `<div class="spinner"></div> Saving...`;
+    }
+    
+    try {
+      // Re-resolve favicon URL
+      let faviconUrl = "";
+      try {
+        const parsedUrl = new URL(newUrl);
+        faviconUrl = `https://www.google.com/s2/favicons?sz=64&domain=${parsedUrl.hostname}`;
+      } catch (err) {
+        console.warn("Invalid original URL for favicon parsing", err);
+      }
+  
+      // Compile Geo Redirect rules
+      const geoRules = {};
+      const geoRedirectEnabled = getChecked("editLinkGeoRedirectEnabled");
+      if (geoRedirectEnabled) {
+        const rows = document.querySelectorAll("#editGeoRulesListContainer .geo-rule-row");
+        rows.forEach(row => {
+          const countryEl = row.querySelector(".geo-country-input");
+          const urlEl = row.querySelector(".geo-url-input");
+          if (countryEl && urlEl) {
+            const country = countryEl.value.trim().toUpperCase();
+            const url = urlEl.value.trim();
+            if (country && url) {
+              geoRules[country] = url;
+            }
+          }
+        });
+      }
+  
+      // Compile Ad Setup Choice
+      const adSetupOption = getValue("editLinkAdSetupOption", "default");
+      const adSetupId = getValue("editLinkAdSetupId");
+      const manualAdSettings = {
+        countdown: parseInt(getValue("editManualCountdown", "10")) || 10,
+        autoRedirect: getChecked("editManualAutoRedirect", true),
+        continueButtonText: getValue("editManualButtonText", "Click to Continue"),
+        headerAdScript: getValue("editManualHeaderAdScript"),
+        headerAdEnabled: getChecked("editManualHeaderAdEnabled"),
+        bodyAdScript: getValue("editManualBodyAdScript"),
+        bodyAdEnabled: getChecked("editManualBodyAdEnabled"),
+        footerAdScript: getValue("editManualFooterAdScript"),
+        footerAdEnabled: getChecked("editManualFooterAdEnabled"),
+        customAdScript: getValue("editManualCustomAdScript"),
+        customAdEnabled: getChecked("editManualCustomAdEnabled")
+      };
+  
+      const docRef = doc(db, "links", id);
+      await updateDoc(docRef, {
+        title: newTitle || `Short link for ${id}`,
+        originalUrl: newUrl,
+        status: newStatus,
+        faviconUrl: faviconUrl,
+  
+        // Advanced options
+        adsCountdownEnabled: getChecked("editLinkAdsCountdownEnabled", true),
+        linkCloakingEnabled: getChecked("editLinkCloakingEnabled"),
+        externalBrowserEnabled: getChecked("editLinkExternalBrowserEnabled"),
+        passwordProtectionEnabled: getChecked("editLinkPasswordProtectionEnabled"),
+        passwordProtectionValue: getValue("editLinkPasswordValue"),
+        ogTitle: getValue("editLinkOgTitle"),
+        ogDescription: getValue("editLinkOgDescription"),
+        ogImageUrl: getValue("editLinkOgImageUrl"),
+        deviceRedirectEnabled: getChecked("editLinkDeviceRedirectEnabled"),
+        desktopUrl: getValue("editLinkDesktopUrl"),
+        androidUrl: getValue("editLinkAndroidUrl"),
+        iosUrl: getValue("editLinkIosUrl"),
+        geoRedirectEnabled: geoRedirectEnabled,
+        geoRules: geoRules,
+        geoDefaultUrl: getValue("editLinkGeoDefaultUrl"),
+  
+        // Ad setups linkage
+        adSetupOption: adSetupOption,
+        adSetupId: adSetupId,
+        manualAdSettings: manualAdSettings
+      });
+      
+      showToast("Short link updated successfully!", "success");
+      logActivity("info", `Updated short link settings for /${id}: Title: '${newTitle}', URL: '${newUrl}', Active: ${newStatus}`);
+      closeEditModal();
+      renderLinksTable(linksCache); // Refresh rendering
+    } catch (err) {
+      console.error("Update link error:", err);
+      showToast("Failed to update short link.", "error");
+    } finally {
+      if (saveEditBtn) {
+        saveEditBtn.disabled = false;
+        saveEditBtn.innerHTML = `Save Changes`;
+      }
+    }
+  });
+}
 
 // Handle Delete Action Trigger
 confirmDeleteBtn.addEventListener("click", async () => {
