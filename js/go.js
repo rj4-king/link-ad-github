@@ -3,7 +3,6 @@ import { db } from "./firebase-config.js";
 import { 
   doc, 
   getDoc, 
-  setDoc,
   updateDoc, 
   increment,
   addDoc,
@@ -35,6 +34,7 @@ let destinationUrl = "";
 let autoRedirect = true;
 let customButtonText = "Click to Continue";
 let redirectionStarted = false;
+let fallbackTimer = null;
 
 // ----------------------------------------------------
 // 1. Initialization and Parallel Data Lookup
@@ -44,7 +44,7 @@ async function initRedirection() {
   if (redirectionStarted) return;
   redirectionStarted = true;
 
-  // Extract short code from URL parameters
+  console.log("[go.js] Initializing main redirection script...");
   const urlParams = new URLSearchParams(window.location.search);
   const code = urlParams.get("code") || urlParams.get("c");
   
@@ -64,12 +64,39 @@ async function initRedirection() {
     customAdEnabled: false
   };
 
+  // Schedule a 5-second fallback backup timer inside JS
+  fallbackTimer = setTimeout(async () => {
+    if (skeletonView && !skeletonView.classList.contains("hidden")) {
+      console.warn("[go.js Fail-safe] Redirection stuck in loader for 5s. Triggering fallback REST query...");
+      try {
+        if (code) {
+          const sanitizedCode = code.trim().toLowerCase();
+          const response = await fetch(`https://firestore.googleapis.com/v1/projects/link-short-fffd2/databases/(default)/documents/links/${sanitizedCode}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.fields && data.fields.originalUrl && data.fields.originalUrl.stringValue) {
+              let backupUrl = data.fields.originalUrl.stringValue;
+              if (backupUrl && !/^https?:\/\//i.test(backupUrl)) {
+                backupUrl = "https://" + backupUrl;
+              }
+              console.log("[go.js Fail-safe] Successful fallback query. Redirecting immediately:", backupUrl);
+              window.location.href = backupUrl;
+              return;
+            }
+          }
+        }
+      } catch (err) {
+        console.error("[go.js Fail-safe] Fallback query failed:", err);
+      }
+      showError("Connection Timeout", "Failed to retrieve the short link. Please reload the page or try again.");
+    }
+  }, 5000);
+
   try {
     const configDocRef = doc(db, "settings", "config");
     
     if (code) {
       const sanitizedCode = code.trim().toLowerCase();
-      
       const linkDocRef = doc(db, "links", sanitizedCode);
 
       // Fetch short link and global settings configuration in parallel
@@ -82,6 +109,7 @@ async function initRedirection() {
 
       // A. Check if the link exists
       if (!linkDocSnap.exists()) {
+        clearTimeout(fallbackTimer);
         await logRedirectFailure(sanitizedCode, "Short code does not exist.");
         showMissingLinkPage(settings);
         return;
@@ -91,6 +119,7 @@ async function initRedirection() {
       
       // B. Check link active status
       if (linkData.status !== true) {
+        clearTimeout(fallbackTimer);
         await logRedirectFailure(sanitizedCode, "Short link is disabled by administrator.");
         showMissingLinkPage(settings);
         return;
@@ -101,6 +130,9 @@ async function initRedirection() {
       if (destinationUrl && !/^https?:\/\//i.test(destinationUrl)) {
         destinationUrl = "https://" + destinationUrl;
       }
+      
+      // Clear fallback timer as the main SDK retrieved data successfully
+      clearTimeout(fallbackTimer);
       
       // C. Increment click count in Firestore (background write)
       updateDoc(linkDocRef, {
@@ -126,6 +158,7 @@ async function initRedirection() {
       startTimer();
       
     } else {
+      clearTimeout(fallbackTimer);
       // Code parameter missing entirely
       const configDocSnap = await getDoc(configDocRef);
       parseSettings(configDocSnap, settings);
@@ -135,6 +168,7 @@ async function initRedirection() {
     }
     
   } catch (error) {
+    clearTimeout(fallbackTimer);
     console.error("Redirection boot error:", error);
     showError("Service Interrupted", "An error occurred while loading this link. Please try again later.");
     const errCode = code ? code.trim().toLowerCase() : "none";
@@ -144,25 +178,29 @@ async function initRedirection() {
 
 // Helper to parse settings configurations
 function parseSettings(configDocSnap, settings) {
-  if (configDocSnap && configDocSnap.exists()) {
-    const configData = configDocSnap.data();
-    settings.pageTitle = configData.pageTitle || settings.pageTitle;
-    settings.buttonText = configData.buttonText || settings.buttonText;
-    settings.countdown = configData.countdown || settings.countdown;
-    settings.autoRedirect = configData.autoRedirect !== false;
-    
-    // Legacy general ad script fallback
-    settings.adScript = configData.adScript || "";
-    
-    // Load individual ad properties
-    settings.headerAdScript = configData.headerAdScript || "";
-    settings.headerAdEnabled = configData.headerAdEnabled === true;
-    settings.bodyAdScript = configData.bodyAdScript || "";
-    settings.bodyAdEnabled = configData.bodyAdEnabled === true;
-    settings.footerAdScript = configData.footerAdScript || "";
-    settings.footerAdEnabled = configData.footerAdEnabled === true;
-    settings.customAdScript = configData.customAdScript || "";
-    settings.customAdEnabled = configData.customAdEnabled === true;
+  try {
+    if (configDocSnap && configDocSnap.exists()) {
+      const configData = configDocSnap.data();
+      settings.pageTitle = configData.pageTitle || settings.pageTitle;
+      settings.buttonText = configData.buttonText || settings.buttonText;
+      settings.countdown = configData.countdown || settings.countdown;
+      settings.autoRedirect = configData.autoRedirect !== false;
+      
+      // Legacy general ad script fallback
+      settings.adScript = configData.adScript || "";
+      
+      // Load individual ad properties
+      settings.headerAdScript = configData.headerAdScript || "";
+      settings.headerAdEnabled = configData.headerAdEnabled === true;
+      settings.bodyAdScript = configData.bodyAdScript || "";
+      settings.bodyAdEnabled = configData.bodyAdEnabled === true;
+      settings.footerAdScript = configData.footerAdScript || "";
+      settings.footerAdEnabled = configData.footerAdEnabled === true;
+      settings.customAdScript = configData.customAdScript || "";
+      settings.customAdEnabled = configData.customAdEnabled === true;
+    }
+  } catch (e) {
+    console.error("Failed to parse settings:", e);
   }
 }
 
@@ -171,25 +209,33 @@ function parseSettings(configDocSnap, settings) {
 // ----------------------------------------------------
 
 function showError(title, subtitle) {
-  errorTitle.textContent = title;
-  errorSubtitle.textContent = subtitle;
-  skeletonView.classList.add("hidden");
-  countdownView.classList.add("hidden");
-  missingLinkView.classList.add("hidden");
-  errorView.classList.remove("hidden");
+  try {
+    errorTitle.textContent = title;
+    errorSubtitle.textContent = subtitle;
+    skeletonView.classList.add("hidden");
+    countdownView.classList.add("hidden");
+    missingLinkView.classList.add("hidden");
+    errorView.classList.remove("hidden");
+  } catch (e) {
+    console.error("Failed to show error view:", e);
+  }
 }
 
 function showMissingLinkPage(settings) {
-  document.title = "Short Link | AdLinker";
-  
-  // Inject and render ads into missingLinkView placeholders
-  injectAdScripts(settings, true);
-  
-  // Transition UI
-  skeletonView.classList.add("hidden");
-  countdownView.classList.add("hidden");
-  errorView.classList.add("hidden");
-  missingLinkView.classList.remove("hidden");
+  try {
+    document.title = "Short Link | AdLinker";
+    
+    // Inject and render ads into missingLinkView placeholders
+    injectAdScripts(settings, true);
+    
+    // Transition UI
+    skeletonView.classList.add("hidden");
+    countdownView.classList.add("hidden");
+    errorView.classList.add("hidden");
+    missingLinkView.classList.remove("hidden");
+  } catch (e) {
+    console.error("Failed to show missing page:", e);
+  }
 }
 
 // ----------------------------------------------------
@@ -197,29 +243,33 @@ function showMissingLinkPage(settings) {
 // ----------------------------------------------------
 
 function injectAdScripts(settings, isMissingPage) {
-  const suffix = isMissingPage ? "missingAd" : "ad";
-  
-  const hasAnyNewAd = (settings.headerAdEnabled && settings.headerAdScript) ||
-                      (settings.bodyAdEnabled && settings.bodyAdScript) ||
-                      (settings.footerAdEnabled && settings.footerAdScript) ||
-                      (settings.customAdEnabled && settings.customAdScript);
-                      
-  if (hasAnyNewAd) {
-    if (settings.headerAdEnabled && settings.headerAdScript) {
-      injectSingleAd(settings.headerAdScript, `${suffix}ContainerHeader`);
+  try {
+    const suffix = isMissingPage ? "missingAd" : "ad";
+    
+    const hasAnyNewAd = (settings.headerAdEnabled && settings.headerAdScript) ||
+                        (settings.bodyAdEnabled && settings.bodyAdScript) ||
+                        (settings.footerAdEnabled && settings.footerAdScript) ||
+                        (settings.customAdEnabled && settings.customAdScript);
+                        
+    if (hasAnyNewAd) {
+      if (settings.headerAdEnabled && settings.headerAdScript) {
+        injectSingleAd(settings.headerAdScript, `${suffix}ContainerHeader`);
+      }
+      if (settings.bodyAdEnabled && settings.bodyAdScript) {
+        injectSingleAd(settings.bodyAdScript, `${suffix}ContainerBody`);
+      }
+      if (settings.footerAdEnabled && settings.footerAdScript) {
+        injectSingleAd(settings.footerAdScript, `${suffix}ContainerFooter`);
+      }
+      if (settings.customAdEnabled && settings.customAdScript) {
+        injectSingleAd(settings.customAdScript, `${suffix}ContainerExtra`);
+      }
+    } else if (settings.adScript) {
+      // Fallback to legacy general ad script in the body container if no new ad slots are configured
+      injectSingleAd(settings.adScript, `${suffix}ContainerBody`);
     }
-    if (settings.bodyAdEnabled && settings.bodyAdScript) {
-      injectSingleAd(settings.bodyAdScript, `${suffix}ContainerBody`);
-    }
-    if (settings.footerAdEnabled && settings.footerAdScript) {
-      injectSingleAd(settings.footerAdScript, `${suffix}ContainerFooter`);
-    }
-    if (settings.customAdEnabled && settings.customAdScript) {
-      injectSingleAd(settings.customAdScript, `${suffix}ContainerExtra`);
-    }
-  } else if (settings.adScript) {
-    // Fallback to legacy general ad script in the body container if no new ad slots are configured
-    injectSingleAd(settings.adScript, `${suffix}ContainerBody`);
+  } catch (e) {
+    console.error("Failed to inject ad scripts:", e);
   }
 }
 
@@ -234,6 +284,23 @@ function injectSingleAd(adScriptHtml, containerId) {
   }
   
   try {
+    // Hijack document.write and document.writeln temporarily to prevent wipe on mobile
+    const originalWrite = document.write;
+    const originalWriteln = document.writeln;
+    
+    document.write = document.writeln = function(htmlString) {
+      console.log(`[Ad Manager] document.write hijacked for #${containerId}. Appending content:`, htmlString);
+      try {
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = htmlString;
+        while (tempDiv.firstChild) {
+          container.appendChild(tempDiv.firstChild);
+        }
+      } catch (err) {
+        console.error("[Ad Manager] Hijacked document.write write error:", err);
+      }
+    };
+
     const parser = new DOMParser();
     const docParsed = parser.parseFromString(adScriptHtml, "text/html");
     
@@ -255,11 +322,17 @@ function injectSingleAd(adScriptHtml, containerId) {
       newScript.textContent = oldScript.textContent;
       generalAdScriptWrapper.appendChild(newScript);
     });
+
+    // Restore original document.write after scripts finish immediate execution
+    setTimeout(() => {
+      document.write = originalWrite;
+      document.writeln = originalWriteln;
+    }, 1500);
+
   } catch (err) {
     console.error(`Ad scripts rendering failed inside #${containerId}:`, err);
   }
 }
-
 
 // ----------------------------------------------------
 // 5. Log Redirection Errors to Notifications Center
@@ -284,35 +357,45 @@ async function logRedirectFailure(code, reason) {
 // ----------------------------------------------------
 
 function startTimer() {
-  countdownNumber.textContent = timeLeft;
-  timerCircleProgress.style.strokeDashoffset = "0";
-  
-  countdownInterval = setInterval(() => {
-    timeLeft--;
-    countdownNumber.textContent = timeLeft >= 0 ? timeLeft : 0;
+  try {
+    countdownNumber.textContent = timeLeft;
+    timerCircleProgress.style.strokeDashoffset = "0";
     
-    const progressOffset = 440 - (440 * (timeLeft / totalTime));
-    timerCircleProgress.style.strokeDashoffset = Math.min(Math.max(progressOffset, 0), 440);
-    
-    if (timeLeft <= 0) {
-      clearInterval(countdownInterval);
-      handleTimerComplete();
-    }
-  }, 1000);
+    countdownInterval = setInterval(() => {
+      timeLeft--;
+      countdownNumber.textContent = timeLeft >= 0 ? timeLeft : 0;
+      
+      const progressOffset = 440 - (440 * (timeLeft / totalTime));
+      timerCircleProgress.style.strokeDashoffset = Math.min(Math.max(progressOffset, 0), 440);
+      
+      if (timeLeft <= 0) {
+        clearInterval(countdownInterval);
+        handleTimerComplete();
+      }
+    }, 1000);
+  } catch (e) {
+    console.error("Timer operation failed:", e);
+  }
 }
 
 function handleTimerComplete() {
-  redirectBtn.removeAttribute("disabled");
-  redirectBtnText.textContent = customButtonText;
-  
-  redirectBtn.addEventListener("click", () => {
-    window.location.href = destinationUrl;
-  });
+  try {
+    redirectBtn.removeAttribute("disabled");
+    redirectBtnText.textContent = customButtonText;
+    
+    redirectBtn.addEventListener("click", () => {
+      console.log("[go.js] Button clicked. Routing to destination:", destinationUrl);
+      window.location.href = destinationUrl;
+    });
 
-  if (autoRedirect) {
-    setTimeout(() => {
-      window.location.replace(destinationUrl);
-    }, 500);
+    if (autoRedirect) {
+      console.log("[go.js] Auto redirecting to destination:", destinationUrl);
+      setTimeout(() => {
+        window.location.replace(destinationUrl);
+      }, 500);
+    }
+  } catch (e) {
+    console.error("Timer complete operations failed:", e);
   }
 }
 

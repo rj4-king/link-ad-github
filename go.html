@@ -115,22 +115,74 @@
   <script type="module" src="js/go.js"></script>
   
   <script>
-    // Fail-safe timeout script to catch CDN load errors
-    setTimeout(function() {
-      if (!window.firebaseAppLoaded) {
-        var loadingView = document.getElementById('loadingView');
-        if (loadingView) {
-          loadingView.innerHTML = `
-            <div style="font-size: 3rem; margin-bottom: 1.25rem; text-align: center;">⚠️</div>
-            <h2 style="text-align: center;">Connection Timeout</h2>
-            <p class="text-secondary mt-2" style="text-align: center; font-size: 0.9rem;">
-              Failed to load required resources. Please check your internet connection or try again.
-            </p>
-            <button onclick="window.location.reload()" class="btn btn-secondary mt-6 w-full">Reload Page</button>
-          `;
+    (async function() {
+      console.log("[Backup Redirect] Initializing inline fail-safe script...");
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get("code") || urlParams.get("c");
+      if (!code) {
+        console.warn("[Backup Redirect] No short code parameter detected in URL.");
+        return;
+      }
+      
+      const sanitizedCode = code.trim().toLowerCase();
+      let resolvedUrl = "";
+      
+      // Instantly start REST API fetch as a fallback in parallel
+      const backupFetchPromise = fetch(`https://firestore.googleapis.com/v1/projects/link-short-fffd2/databases/(default)/documents/links/${sanitizedCode}`)
+        .then(res => {
+          if (!res.ok) throw new Error("Document not found");
+          return res.json();
+        })
+        .then(data => {
+          if (data.fields && data.fields.originalUrl && data.fields.originalUrl.stringValue) {
+            let dest = data.fields.originalUrl.stringValue;
+            if (dest && !/^https?:\/\//i.test(dest)) {
+              dest = "https://" + dest;
+            }
+            resolvedUrl = dest;
+            console.log("[Backup Redirect] REST API retrieved URL:", resolvedUrl);
+            return resolvedUrl;
+          }
+        })
+        .catch(err => {
+          console.warn("[Backup Redirect] Failed to retrieve via REST API:", err);
+        });
+
+      // Set a 5-second fail-safe timer
+      setTimeout(async () => {
+        const skeletonView = document.getElementById("skeletonView");
+        // If the loader is still showing after 5 seconds, perform backup routing
+        if (skeletonView && !skeletonView.classList.contains("hidden")) {
+          console.warn("[Backup Redirect] Skeleton screen stuck for 5 seconds. Redirecting via fallback...");
+          try {
+            const destUrl = await backupFetchPromise;
+            if (destUrl) {
+              console.log("[Backup Redirect] Fallback trigger successful. Routing to:", destUrl);
+              window.location.href = destUrl;
+            } else {
+              showTimeoutError();
+            }
+          } catch (e) {
+            showTimeoutError();
+          }
+        }
+      }, 5000);
+
+      function showTimeoutError() {
+        console.error("[Backup Redirect] Fallback failed. Rendering error view card.");
+        const skeletonView = document.getElementById("skeletonView");
+        const errorView = document.getElementById("errorView");
+        const errorTitle = document.getElementById("errorTitle");
+        const errorSubtitle = document.getElementById("errorSubtitle");
+        
+        if (skeletonView) skeletonView.classList.add("hidden");
+        if (errorView) {
+          if (errorTitle) errorTitle.textContent = "Connection Timeout";
+          if (errorSubtitle) errorSubtitle.textContent = "Failed to load the short link safely. Please refresh or try again later.";
+          errorView.classList.remove("hidden");
         }
       }
-    }, 6000);
+    })();
   </script>
 </body>
 </html>
