@@ -70,9 +70,6 @@ async function initRedirection() {
     if (code) {
       const sanitizedCode = code.trim().toLowerCase();
       
-      // Start tracking visitor presence
-      trackPresence(sanitizedCode);
-      
       const linkDocRef = doc(db, "links", sanitizedCode);
 
       // Fetch short link and global settings configuration in parallel
@@ -263,33 +260,6 @@ function injectSingleAd(adScriptHtml, containerId) {
   }
 }
 
-// ----------------------------------------------------
-// 4. Presence Tracking (Updates database status)
-// ----------------------------------------------------
-
-function trackPresence(code) {
-  let sessionId = sessionStorage.getItem("presence_session");
-  if (!sessionId) {
-    sessionId = "session_" + Math.random().toString(36).substring(2, 15);
-    sessionStorage.setItem("presence_session", sessionId);
-  }
-  
-  const presenceRef = doc(db, "presence", sessionId);
-  const registerStatus = async () => {
-    try {
-      await setDoc(presenceRef, {
-        lastActive: Date.now(),
-        type: "visitor",
-        code: code || ""
-      });
-    } catch (err) {
-      console.warn("Presence registration failed:", err);
-    }
-  };
-  
-  registerStatus();
-  setInterval(registerStatus, 20000);
-}
 
 // ----------------------------------------------------
 // 5. Log Redirection Errors to Notifications Center

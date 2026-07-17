@@ -37,8 +37,6 @@ const logoutBtn = document.getElementById("logoutBtn");
 const statTotalLinks = document.getElementById("statTotalLinks");
 const statTotalClicks = document.getElementById("statTotalClicks");
 const statActiveLinks = document.getElementById("statActiveLinks");
-const statLiveVisitors = document.getElementById("statLiveVisitors");
-const statActiveUsers = document.getElementById("statActiveUsers");
 
 // DOM Elements - Create Link Form
 const createLinkForm = document.getElementById("createLinkForm");
@@ -114,8 +112,6 @@ let linksCache = [];
 let loadedNotifications = [];
 let unsubscribeLinks = null;
 let unsubscribeNotifications = null;
-let unsubscribePresence = null;
-let presenceInterval = null;
 let hasLoggedLogin = false;
 
 // Helper: Toast Notifications
@@ -187,11 +183,7 @@ onAuthStateChanged(auth, (user) => {
     // Bind Realtime listeners
     bindRealtimeLinks();
     bindNotifications();
-    bindPresenceTracking();
     fetchSettings();
-    
-    // Run self-cleanup on old presence records
-    cleanupPresenceRecords();
   } else {
     // Unauthenticated state
     authScreen.style.display = "flex";
@@ -205,14 +197,6 @@ onAuthStateChanged(auth, (user) => {
     if (unsubscribeNotifications) {
       unsubscribeNotifications();
       unsubscribeNotifications = null;
-    }
-    if (unsubscribePresence) {
-      unsubscribePresence();
-      unsubscribePresence = null;
-    }
-    if (presenceInterval) {
-      clearInterval(presenceInterval);
-      presenceInterval = null;
     }
     hasLoggedLogin = false;
   }
@@ -798,73 +782,6 @@ saveCustomAdBtn.addEventListener("click", () => {
   });
 });
 
-// ----------------------------------------------------
-// 6. Presence Tracking & Analytics Status (Live Metrics)
-// ----------------------------------------------------
-
-function bindPresenceTracking() {
-  let sessionId = sessionStorage.getItem("presence_session");
-  if (!sessionId) {
-    sessionId = "session_" + Math.random().toString(36).substring(2, 15);
-    sessionStorage.setItem("presence_session", sessionId);
-  }
-  
-  const presenceRef = doc(db, "presence", sessionId);
-  const reportPresence = async () => {
-    try {
-      await setDoc(presenceRef, {
-        lastActive: Date.now(),
-        type: "admin"
-      });
-    } catch (err) {
-      console.warn("Failed reporting admin active status:", err);
-    }
-  };
-
-  reportPresence();
-  presenceInterval = setInterval(reportPresence, 20000);
-
-  // Monitor total live presence elements from Firestore query
-  const presenceCollection = collection(db, "presence");
-  
-  unsubscribePresence = onSnapshot(presenceCollection, (snapshot) => {
-    let visitorsCount = 0;
-    let usersCount = 0;
-    const now = Date.now();
-    const threshold = 45000; // 45 seconds timeout threshold
-    
-    snapshot.forEach(docSnap => {
-      const data = docSnap.data();
-      if (now - data.lastActive < threshold) {
-        if (data.type === "visitor") {
-          visitorsCount++;
-        } else if (data.type === "admin") {
-          usersCount++;
-        }
-      }
-    });
-    
-    statLiveVisitors.textContent = visitorsCount;
-    statActiveUsers.textContent = usersCount;
-  });
-}
-
-// Auto purge outdated presence records from Firestore
-async function cleanupPresenceRecords() {
-  try {
-    const threshold = Date.now() - 300000; // 5 minutes inactivity
-    const q = query(collection(db, "presence"), where("lastActive", "<", threshold));
-    const snaps = await getDocs(q);
-    
-    snaps.forEach(async (d) => {
-      try {
-        await deleteDoc(doc(db, "presence", d.id));
-      } catch (err) {}
-    });
-  } catch (err) {
-    console.warn("Presence cleanup task skip:", err);
-  }
-}
 
 // ----------------------------------------------------
 // 7. Notification Center Drawer Real-time Logic

@@ -34,13 +34,6 @@ service cloud.firestore {
       );
     }
 
-    // Presence Collection Rules
-    match /presence/{presenceId} {
-      // Anyone can report/update their own active status
-      allow write: if true;
-      // Only admins can see who is online
-      allow read: if isAdmin();
-    }
 
     // Notifications Collection Rules
     match /notifications/{notificationId} {
