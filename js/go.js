@@ -154,6 +154,9 @@ function parseSettings(configDocSnap, settings) {
     settings.countdown = configData.countdown || settings.countdown;
     settings.autoRedirect = configData.autoRedirect !== false;
     
+    // Legacy general ad script fallback
+    settings.adScript = configData.adScript || "";
+    
     // Load individual ad properties
     settings.headerAdScript = configData.headerAdScript || "";
     settings.headerAdEnabled = configData.headerAdEnabled === true;
@@ -197,19 +200,29 @@ function showMissingLinkPage(settings) {
 // ----------------------------------------------------
 
 function injectAdScripts(settings, isMissingPage) {
-  const suffix = isMissingPage ? "missing" : "ad";
+  const suffix = isMissingPage ? "missingAd" : "ad";
   
-  if (settings.headerAdEnabled && settings.headerAdScript) {
-    injectSingleAd(settings.headerAdScript, `${suffix}ContainerHeader`);
-  }
-  if (settings.bodyAdEnabled && settings.bodyAdScript) {
-    injectSingleAd(settings.bodyAdScript, `${suffix}ContainerBody`);
-  }
-  if (settings.footerAdEnabled && settings.footerAdScript) {
-    injectSingleAd(settings.footerAdScript, `${suffix}ContainerFooter`);
-  }
-  if (settings.customAdEnabled && settings.customAdScript) {
-    injectSingleAd(settings.customAdScript, `${suffix}ContainerExtra`);
+  const hasAnyNewAd = (settings.headerAdEnabled && settings.headerAdScript) ||
+                      (settings.bodyAdEnabled && settings.bodyAdScript) ||
+                      (settings.footerAdEnabled && settings.footerAdScript) ||
+                      (settings.customAdEnabled && settings.customAdScript);
+                      
+  if (hasAnyNewAd) {
+    if (settings.headerAdEnabled && settings.headerAdScript) {
+      injectSingleAd(settings.headerAdScript, `${suffix}ContainerHeader`);
+    }
+    if (settings.bodyAdEnabled && settings.bodyAdScript) {
+      injectSingleAd(settings.bodyAdScript, `${suffix}ContainerBody`);
+    }
+    if (settings.footerAdEnabled && settings.footerAdScript) {
+      injectSingleAd(settings.footerAdScript, `${suffix}ContainerFooter`);
+    }
+    if (settings.customAdEnabled && settings.customAdScript) {
+      injectSingleAd(settings.customAdScript, `${suffix}ContainerExtra`);
+    }
+  } else if (settings.adScript) {
+    // Fallback to legacy general ad script in the body container if no new ad slots are configured
+    injectSingleAd(settings.adScript, `${suffix}ContainerBody`);
   }
 }
 
