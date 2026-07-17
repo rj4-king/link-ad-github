@@ -1129,3 +1129,22 @@ input:checked + .slider:before {
   color: var(--color-primary);
 }
 
+/* Fixed Debug Page Label Styling */
+.debug-page-label {
+  position: fixed;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.7);
+  color: #ffffff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-family: monospace;
+  pointer-events: none;
+  z-index: 99999;
+  letter-spacing: 0.05em;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  white-space: nowrap;
+}
+

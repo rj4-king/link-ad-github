@@ -117,6 +117,8 @@
   <script>
     (async function() {
       console.log("[Backup Redirect] Initializing inline fail-safe script...");
+      console.log("Current Page: PAGE: Short Link Loading");
+      
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get("code") || urlParams.get("c");
       if (!code) {
@@ -203,6 +205,9 @@
                 destUrl = "https://" + destUrl;
               }
               console.log("[Backup Redirect] Fallback trigger successful. Routing to:", destUrl);
+              console.log("Current Page: PAGE: Short Link Redirect");
+              const debugLabel = document.getElementById("debugPageLabel");
+              if (debugLabel) debugLabel.textContent = "PAGE: Short Link Redirect";
               window.location.href = destUrl;
             } else {
               // If the short code does not exist, show the missing link/ads-only view
@@ -217,6 +222,10 @@
       }, 5000);
 
       function showMissingLinkFallback(settings) {
+        console.log("Current Page: PAGE: Link Code Missing");
+        const debugLabel = document.getElementById("debugPageLabel");
+        if (debugLabel) debugLabel.textContent = "PAGE: Link Code Missing";
+        
         const skeletonView = document.getElementById("skeletonView");
         const missingLinkView = document.getElementById("missingLinkView");
         
@@ -279,6 +288,10 @@
       }
 
       function showTimeoutError() {
+        console.log("Current Page: PAGE: Redirection Error");
+        const debugLabel = document.getElementById("debugPageLabel");
+        if (debugLabel) debugLabel.textContent = "PAGE: Redirection Error";
+        
         console.error("[Backup Redirect] Fallback failed. Rendering error view card.");
         const skeletonView = document.getElementById("skeletonView");
         const errorView = document.getElementById("errorView");
@@ -294,5 +307,7 @@
       }
     })();
   </script>
+  <!-- Fixed Debug Page Label -->
+  <div id="debugPageLabel" class="debug-page-label">PAGE: Short Link Loading</div>
 </body>
 </html>

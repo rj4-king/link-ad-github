@@ -45,6 +45,8 @@ async function initRedirection() {
   redirectionStarted = true;
 
   console.log("[go.js] Initializing main redirection script...");
+  console.log("Current Page: PAGE: Short Link Loading");
+  
   const urlParams = new URLSearchParams(window.location.search);
   const code = urlParams.get("code") || urlParams.get("c");
   
@@ -80,6 +82,9 @@ async function initRedirection() {
                 backupUrl = "https://" + backupUrl;
               }
               console.log("[go.js Fail-safe] Successful fallback query. Redirecting immediately:", backupUrl);
+              console.log("Current Page: PAGE: Short Link Redirect");
+              const debugLabel = document.getElementById("debugPageLabel");
+              if (debugLabel) debugLabel.textContent = "PAGE: Short Link Redirect";
               window.location.href = backupUrl;
               return;
             }
@@ -155,6 +160,12 @@ async function initRedirection() {
       // F. Transition UI and Start timer countdown
       skeletonView.classList.add("hidden");
       countdownView.classList.remove("hidden");
+      
+      // Update Debug Label to Redirect screen
+      const debugLabel = document.getElementById("debugPageLabel");
+      if (debugLabel) debugLabel.textContent = "PAGE: Short Link Redirect";
+      console.log("Current Page: PAGE: Short Link Redirect");
+
       startTimer();
       
     } else {
@@ -216,6 +227,11 @@ function showError(title, subtitle) {
     countdownView.classList.add("hidden");
     missingLinkView.classList.add("hidden");
     errorView.classList.remove("hidden");
+
+    // Update Debug Label
+    const debugLabel = document.getElementById("debugPageLabel");
+    if (debugLabel) debugLabel.textContent = "PAGE: Redirection Error";
+    console.log("Current Page: PAGE: Redirection Error");
   } catch (e) {
     console.error("Failed to show error view:", e);
   }
@@ -233,6 +249,11 @@ function showMissingLinkPage(settings) {
     countdownView.classList.add("hidden");
     errorView.classList.add("hidden");
     missingLinkView.classList.remove("hidden");
+
+    // Update Debug Label
+    const debugLabel = document.getElementById("debugPageLabel");
+    if (debugLabel) debugLabel.textContent = "PAGE: Link Code Missing";
+    console.log("Current Page: PAGE: Link Code Missing");
   } catch (e) {
     console.error("Failed to show missing page:", e);
   }

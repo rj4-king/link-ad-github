@@ -341,6 +341,11 @@ onAuthStateChanged(auth, (user) => {
     dashboardScreen.style.display = "block";
     userEmailDisplay.textContent = user.email;
     
+    // Update Debug Label to Dashboard
+    const debugLabel = document.getElementById("debugPageLabel");
+    if (debugLabel) debugLabel.textContent = "PAGE: Admin Dashboard";
+    console.log("Current Page: PAGE: Admin Dashboard");
+    
     // Log user login activity (once per session)
     if (!hasLoggedLogin && !sessionStorage.getItem("admin_login_logged")) {
       logActivity("info", `Admin logged in successfully: ${user.email}`);
@@ -356,6 +361,11 @@ onAuthStateChanged(auth, (user) => {
     // Unauthenticated state
     authScreen.style.display = "flex";
     dashboardScreen.style.display = "none";
+    
+    // Update Debug Label to Login
+    const debugLabel = document.getElementById("debugPageLabel");
+    if (debugLabel) debugLabel.textContent = "PAGE: Admin Login";
+    console.log("Current Page: PAGE: Admin Login");
     
     // Clear dynamic listeners & intervals
     if (unsubscribeLinks) {
