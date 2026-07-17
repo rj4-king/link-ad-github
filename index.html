@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Secure and modern Firebase URL Shortener Admin Dashboard.">
   <title>Admin Dashboard | Premium URL Shortener</title>
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=1.1.0">
 </head>
 <body>
   <!-- Ambient Gradient mesh -->
@@ -14,7 +14,13 @@
   <!-- Toast Notification Container -->
   <div id="toastContainer" class="toast-container"></div>
 
-  <!-- 1. Authentication Screen -->
+  <!-- Hidden Toggles for CSS-based tab switching and mobile sidebar -->
+  <input type="radio" name="admin-tabs" id="tab-dashboard-radio" checked style="display: none;">
+  <input type="radio" name="admin-tabs" id="tab-links-radio" style="display: none;">
+  <input type="radio" name="admin-tabs" id="tab-adsetup-radio" style="display: none;">
+  <input type="checkbox" id="sidebarMobileToggle" style="display: none;">
+
+  <!-- 1. Authentication Access Screen -->
   <div id="authScreen" class="auth-wrapper">
     <div class="glass-card auth-card">
       <div class="auth-header">
@@ -38,415 +44,448 @@
     </div>
   </div>
 
-  <!-- 2. Dashboard Screen (Hidden until logged in) -->
-  <div id="dashboardScreen" class="dashboard-wrapper container">
-    <!-- Navbar Header -->
-    <header class="dashboard-header">
-      <div class="logo-text">
-        <span>🔗</span>
-        <span>AdLinker</span>
+  <!-- 2. Dashboard Screen Layout (Hidden until logged in) -->
+  <div id="dashboardScreen" class="dashboard-layout" style="display: none;">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-logo">🔗</span>
+        <span class="brand-name">AdLinker</span>
       </div>
-      <div class="user-badge">
-        <!-- Notification Bell -->
-        <div class="notification-bell-container" id="notificationBellContainer" style="margin-right: 0.5rem;">
-          <button id="notificationBellBtn" class="btn-icon-only bell-btn" aria-label="Notifications" title="View Notifications">
-            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/>
+      <nav class="sidebar-menu">
+        <label for="tab-dashboard-radio" class="sidebar-menu-item menu-dashboard">
+          <span class="menu-icon">📊</span>
+          <span class="menu-text">Dashboard</span>
+        </label>
+        <label for="tab-links-radio" class="sidebar-menu-item menu-links">
+          <span class="menu-icon">🔗</span>
+          <span class="menu-text">Links</span>
+        </label>
+        <label for="tab-adsetup-radio" class="sidebar-menu-item menu-adsetup">
+          <span class="menu-icon">⚙️</span>
+          <span class="menu-text">Ad Setup Manager</span>
+        </label>
+      </nav>
+    </aside>
+
+    <!-- Main Workspace Container -->
+    <div class="workspace">
+      <!-- Sticky Topbar Header -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <!-- Mobile Sidebar Toggle -->
+          <label for="sidebarMobileToggle" class="sidebar-toggle-btn" aria-label="Toggle Sidebar">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M4 6h16M4 12h16M4 18h16"/>
             </svg>
-            <span id="notificationBadge" class="notification-badge hidden">0</span>
+          </label>
+          <div id="debugPageLabel" class="page-title-badge">PAGE: Admin Dashboard</div>
+        </div>
+        <div class="topbar-right">
+          <!-- Notification Bell -->
+          <div class="notification-bell-container" id="notificationBellContainer">
+            <button id="notificationBellBtn" class="btn-icon-only bell-btn" aria-label="Notifications" title="View Notifications">
+              <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+              <span id="notificationBadge" class="notification-badge hidden">0</span>
+            </button>
+          </div>
+
+          <span id="userEmailDisplay" class="user-email">admin@example.com</span>
+          <button id="logoutBtn" class="btn btn-secondary btn-sm" aria-label="Sign Out">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+            </svg>
+            <span>Logout</span>
           </button>
         </div>
+      </header>
 
-        <span id="userEmailDisplay" class="user-email">admin@example.com</span>
-        <button id="logoutBtn" class="btn btn-secondary btn-sm" aria-label="Sign Out">
-          <!-- Sign out SVG icon -->
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-          <span>Logout</span>
-        </button>
-      </div>
-    </header>
-
-    <!-- Stats Grid Row -->
-    <div class="stats-grid">
-      <div class="glass-card stat-card">
-        <div class="stat-icon">📊</div>
-        <div class="stat-info">
-          <span id="statTotalLinks" class="stat-value">0</span>
-          <span class="stat-label">Total Links</span>
-        </div>
-      </div>
-      <div class="glass-card stat-card">
-        <div class="stat-icon">🖱️</div>
-        <div class="stat-info">
-          <span id="statTotalClicks" class="stat-value">0</span>
-          <span class="stat-label">Total Clicks</span>
-        </div>
-      </div>
-      <div class="glass-card stat-card">
-        <div class="stat-icon">🟢</div>
-        <div class="stat-info">
-          <span id="statActiveLinks" class="stat-value">0</span>
-          <span class="stat-label">Active Links</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Main Grid Panels -->
-    <div class="dashboard-grid">
-      
-      <!-- LEFT PANEL: Link Management -->
-      <div class="flex" style="flex-direction: column; gap: 2rem;">
+      <!-- Main Workspace Scrollable Body -->
+      <div class="workspace-body">
         
-        <!-- Shortener Creator Card -->
-        <div class="glass-card">
-          <div class="panel-header">
-            <h2 class="panel-title">⚡ Create Short Link</h2>
+        <!-- Tab 1: Dashboard statistics & Create link form -->
+        <div class="tab-content dashboard-tab-content">
+          <!-- Stats Cards Grid -->
+          <div class="stats-grid">
+            <div class="glass-card stat-card">
+              <div class="stat-icon">📊</div>
+              <div class="stat-info">
+                <span id="statTotalLinks" class="stat-value">0</span>
+                <span class="stat-label">Total Links</span>
+              </div>
+            </div>
+            <div class="glass-card stat-card">
+              <div class="stat-icon">🖱️</div>
+              <div class="stat-info">
+                <span id="statTotalClicks" class="stat-value">0</span>
+                <span class="stat-label">Total Clicks</span>
+              </div>
+            </div>
+            <div class="glass-card stat-card">
+              <div class="stat-icon">🟢</div>
+              <div class="stat-info">
+                <span id="statActiveLinks" class="stat-value">0</span>
+                <span class="stat-label">Active Links</span>
+              </div>
+            </div>
           </div>
-          <div class="panel-body">
-            <form id="createLinkForm">
-              <div class="form-group">
-                <label for="originalUrlInput" class="form-label">Paste Long URL</label>
-                <input type="url" id="originalUrlInput" class="form-input" placeholder="https://example.com/very-long-destination-url-here" required autocomplete="url">
-              </div>
-              <div class="form-group">
-                <label for="linkTitleInput" class="form-label">Link Title <span class="text-muted">(Optional)</span></label>
-                <div class="flex align-center gap-2">
-                  <input type="text" id="linkTitleInput" class="form-input" placeholder="e.g., Google Search Page" style="flex: 1;">
-                  <div id="titleLoadingSpinner" class="spinner hidden" style="width: 1.2rem; height: 1.2rem; flex-shrink: 0;"></div>
-                </div>
-                <small class="text-muted mt-1" style="display: block;">Automatically fetched when pasting a URL. You can override it manually.</small>
-              </div>
-              <div class="form-group">
-                <label for="customCodeInput" class="form-label">Custom Short Code <span class="text-muted">(Optional)</span></label>
-                <div class="flex align-center gap-2">
-                  <input type="text" id="customCodeInput" class="form-input" placeholder="e.g., promo123" pattern="^[a-zA-Z0-9-_]+$" title="Only letters, numbers, dashes and underscores.">
-                  <button type="button" id="generateCodeBtn" class="btn btn-secondary" style="white-space: nowrap;" title="Generate random code">Auto Gen</button>
-                </div>
-                <small class="text-muted mt-1" style="display: block;">Leave blank to generate a random 6-character code.</small>
-              </div>
-              
-              <!-- Advanced Options Toggle -->
-              <div class="form-group" style="margin-top: 1.5rem; margin-bottom: 1rem;">
-                <button type="button" id="toggleAdvancedOptionsBtn" class="btn btn-secondary w-full flex align-center justify-between" style="padding: 0.65rem 1rem; border-color: rgba(255,255,255,0.06); font-size: 0.9rem;">
-                  <span class="flex align-center gap-2">⚙️ <span>Advanced Options</span></span>
-                  <span id="advancedOptionsChevron" style="transition: transform 0.3s;">▼</span>
-                </button>
-              </div>
 
-              <!-- Collapsible Advanced Options Container -->
-              <div id="advancedOptionsContainer" class="hidden" style="border-top: 1px dashed var(--border-glass); padding-top: 1.5rem; margin-top: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;">
+          <!-- Small Create Short Link Card -->
+          <div class="glass-card">
+            <div class="panel-header">
+              <h2 class="panel-title">⚡ Create Short Link</h2>
+            </div>
+            <div class="panel-body">
+              <form id="createLinkForm">
+                <div class="form-group">
+                  <label for="originalUrlInput" class="form-label">Paste Long URL</label>
+                  <input type="url" id="originalUrlInput" class="form-input" placeholder="https://example.com/very-long-destination-url-here" required autocomplete="url">
+                </div>
+                <div class="form-group">
+                  <label for="linkTitleInput" class="form-label">Link Title <span class="text-muted">(Optional)</span></label>
+                  <div class="flex align-center gap-2">
+                    <input type="text" id="linkTitleInput" class="form-input" placeholder="e.g., Google Search Page" style="flex: 1;">
+                    <div id="titleLoadingSpinner" class="spinner hidden" style="width: 1.2rem; height: 1.2rem; flex-shrink: 0;"></div>
+                  </div>
+                  <small class="text-muted mt-1" style="display: block; font-size: 0.75rem;">Automatically fetched when pasting a URL. You can override it manually.</small>
+                </div>
+                <div class="form-group">
+                  <label for="customCodeInput" class="form-label">Custom Short Code <span class="text-muted">(Optional)</span></label>
+                  <div class="flex align-center gap-2">
+                    <input type="text" id="customCodeInput" class="form-input" placeholder="e.g., promo123" pattern="^[a-zA-Z0-9-_]+$" title="Only letters, numbers, dashes and underscores.">
+                    <button type="button" id="generateCodeBtn" class="btn btn-secondary" style="white-space: nowrap;" title="Generate random code">Auto Gen</button>
+                  </div>
+                  <small class="text-muted mt-1" style="display: block; font-size: 0.75rem;">Leave blank to generate a random 6-character code.</small>
+                </div>
                 
-                <!-- Ad Setup Settings Sub-Card -->
-                <div class="glass-card settings-sub-card" style="padding: 1rem; background: rgba(0,0,0,0.15); border-color: rgba(255,255,255,0.03);">
-                  <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                    <span>📢 Ad Setup Configuration</span>
-                  </h3>
+                <!-- Advanced Options Toggle -->
+                <div class="form-group" style="margin-top: 1.5rem; margin-bottom: 1rem;">
+                  <button type="button" id="toggleAdvancedOptionsBtn" class="btn btn-secondary w-full flex align-center justify-between" style="padding: 0.65rem 1rem; border-color: rgba(255,255,255,0.06); font-size: 0.9rem;">
+                    <span class="flex align-center gap-2">⚙️ <span>Advanced Options</span></span>
+                    <span id="advancedOptionsChevron" style="transition: transform 0.3s;">▼</span>
+                  </button>
+                </div>
+
+                <!-- Collapsible Advanced Options Container -->
+                <div id="advancedOptionsContainer" class="hidden" style="border-top: 1px dashed var(--border-glass); padding-top: 1.5rem; margin-top: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;">
                   
-                  <div class="form-group">
-                    <label for="linkAdSetupOption" class="form-label">Ad Setup Option</label>
-                    <select id="linkAdSetupOption" class="form-input" style="background: rgba(0, 0, 0, 0.3);">
-                      <option value="default">Default Ad Setup</option>
-                      <option value="select">Select Existing Ad Setup</option>
-                      <option value="manual">Manual Custom Settings</option>
-                    </select>
-                  </div>
-
-                  <div id="linkAdSetupSelectGroup" class="form-group hidden">
-                    <label for="linkAdSetupId" class="form-label">Choose Custom Ad Setup</label>
-                    <select id="linkAdSetupId" class="form-input" style="background: rgba(0, 0, 0, 0.3);">
-                      <!-- Will be filled by js -->
-                    </select>
-                  </div>
-
-                  <!-- Manual Ad Custom Overrides -->
-                  <div id="linkAdSetupManualGroup" class="hidden" style="border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 1rem; margin-top: 1rem; display: flex; flex-direction: column; gap: 1rem;">
-                    <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                      <div class="form-group" style="margin-bottom: 0;">
-                        <label for="manualCountdown" class="form-label">Timer (Seconds)</label>
-                        <input type="number" id="manualCountdown" class="form-input" min="0" max="60" value="10">
-                      </div>
-                      <div class="form-group" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: center;">
-                        <label class="form-label" style="margin-bottom: 0.5rem;">Auto Redirect</label>
-                        <label class="switch">
-                          <input type="checkbox" id="manualAutoRedirect" checked>
-                          <span class="slider"></span>
-                        </label>
-                      </div>
+                  <!-- Ad Setup Settings Sub-Card -->
+                  <div class="glass-card settings-sub-card">
+                    <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                      <span>📢 Ad Setup Configuration</span>
+                    </h3>
+                    
+                    <div class="form-group">
+                      <label for="linkAdSetupOption" class="form-label">Ad Setup Option</label>
+                      <select id="linkAdSetupOption" class="form-input" style="background: rgba(0, 0, 0, 0.3);">
+                        <option value="default">Default Ad Setup</option>
+                        <option value="select">Select Existing Ad Setup</option>
+                        <option value="manual">Manual Custom Settings</option>
+                      </select>
                     </div>
-                    <div class="form-group" style="margin-bottom: 0;">
-                      <label for="manualButtonText" class="form-label">Continue Button Text</label>
-                      <input type="text" id="manualButtonText" class="form-input" placeholder="Click to Continue" value="Click to Continue">
+
+                    <div id="linkAdSetupSelectGroup" class="form-group hidden">
+                      <label for="linkAdSetupId" class="form-label">Choose Custom Ad Setup</label>
+                      <select id="linkAdSetupId" class="form-input" style="background: rgba(0, 0, 0, 0.3);">
+                        <!-- Will be filled by js -->
+                      </select>
                     </div>
-                    <!-- Manual Ad Scripts Slots -->
-                    <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.5rem;">
-                      <div class="form-group" style="margin-bottom: 0;">
-                        <div class="flex align-center justify-between mb-1">
-                          <label for="manualHeaderAdScript" class="form-label" style="margin-bottom:0;">Header Ad Script</label>
-                          <label class="switch" style="transform: scale(0.85);">
-                            <input type="checkbox" id="manualHeaderAdEnabled">
+
+                    <!-- Manual Ad Custom Overrides -->
+                    <div id="linkAdSetupManualGroup" class="hidden" style="border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 1rem; margin-top: 1rem; display: flex; flex-direction: column; gap: 1rem;">
+                      <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                          <label for="manualCountdown" class="form-label">Timer (Seconds)</label>
+                          <input type="number" id="manualCountdown" class="form-input" min="0" max="60" value="10">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: center;">
+                          <label class="form-label" style="margin-bottom: 0.5rem;">Auto Redirect</label>
+                          <label class="switch">
+                            <input type="checkbox" id="manualAutoRedirect" checked>
                             <span class="slider"></span>
                           </label>
                         </div>
-                        <textarea id="manualHeaderAdScript" class="form-input" rows="2" style="font-family: monospace; font-size: 0.75rem;" placeholder="<!-- Header script -->"></textarea>
                       </div>
                       <div class="form-group" style="margin-bottom: 0;">
-                        <div class="flex align-center justify-between mb-1">
-                          <label for="manualBodyAdScript" class="form-label" style="margin-bottom:0;">Body Ad Script</label>
-                          <label class="switch" style="transform: scale(0.85);">
-                            <input type="checkbox" id="manualBodyAdEnabled">
-                            <span class="slider"></span>
-                          </label>
+                        <label for="manualButtonText" class="form-label">Continue Button Text</label>
+                        <input type="text" id="manualButtonText" class="form-input" placeholder="Click to Continue" value="Click to Continue">
+                      </div>
+                      
+                      <!-- Manual Ad Scripts Slots -->
+                      <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.5rem;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                          <div class="flex align-center justify-between mb-1">
+                            <label for="manualHeaderAdScript" class="form-label" style="margin-bottom:0;">Header Ad Script</label>
+                            <label class="switch" style="transform: scale(0.85);">
+                              <input type="checkbox" id="manualHeaderAdEnabled">
+                              <span class="slider"></span>
+                            </label>
+                          </div>
+                          <textarea id="manualHeaderAdScript" class="form-input" rows="2" style="font-family: monospace; font-size: 0.75rem;" placeholder="<!-- Header script -->"></textarea>
                         </div>
-                        <textarea id="manualBodyAdScript" class="form-input" rows="2" style="font-family: monospace; font-size: 0.75rem;" placeholder="<!-- Body script -->"></textarea>
+                        <div class="form-group" style="margin-bottom: 0;">
+                          <div class="flex align-center justify-between mb-1">
+                            <label for="manualBodyAdScript" class="form-label" style="margin-bottom:0;">Body Ad Script</label>
+                            <label class="switch" style="transform: scale(0.85);">
+                              <input type="checkbox" id="manualBodyAdEnabled">
+                              <span class="slider"></span>
+                            </label>
+                          </div>
+                          <textarea id="manualBodyAdScript" class="form-input" rows="2" style="font-family: monospace; font-size: 0.75rem;" placeholder="<!-- Body script -->"></textarea>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                          <div class="flex align-center justify-between mb-1">
+                            <label for="manualFooterAdScript" class="form-label" style="margin-bottom:0;">Footer Ad Script</label>
+                            <label class="switch" style="transform: scale(0.85);">
+                              <input type="checkbox" id="manualFooterAdEnabled">
+                              <span class="slider"></span>
+                            </label>
+                          </div>
+                          <textarea id="manualFooterAdScript" class="form-input" rows="2" style="font-family: monospace; font-size: 0.75rem;" placeholder="<!-- Footer script -->"></textarea>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                          <div class="flex align-center justify-between mb-1">
+                            <label for="manualCustomAdScript" class="form-label" style="margin-bottom:0;">Custom/Extra Ad Script</label>
+                            <label class="switch" style="transform: scale(0.85);">
+                              <input type="checkbox" id="manualCustomAdEnabled">
+                              <span class="slider"></span>
+                            </label>
+                          </div>
+                          <textarea id="manualCustomAdScript" class="form-input" rows="2" style="font-family: monospace; font-size: 0.75rem;" placeholder="<!-- Custom script -->"></textarea>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Ads & Countdown Bypass Sub-Card -->
+                  <div class="glass-card settings-sub-card">
+                    <div class="flex align-center justify-between">
+                      <div>
+                        <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">⏱️ Ads & Countdown</h3>
+                        <p class="text-muted" style="font-size: 0.75rem;">Enable/Disable visitor landing & countdown page.</p>
+                      </div>
+                      <label class="switch">
+                        <input type="checkbox" id="linkAdsCountdownEnabled" checked>
+                        <span class="slider"></span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Cloaking Sub-Card -->
+                  <div class="glass-card settings-sub-card">
+                    <div class="flex align-center justify-between mb-2">
+                      <div>
+                        <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">🎭 Link Cloaking</h3>
+                        <p class="text-muted" style="font-size: 0.75rem;">Mask destination URL inside an iframe wrapper.</p>
+                      </div>
+                      <label class="switch">
+                        <input type="checkbox" id="linkCloakingEnabled">
+                        <span class="slider"></span>
+                      </label>
+                    </div>
+                    <small class="text-warning" style="font-size: 0.725rem; display: block;">⚠️ Some websites may block iframe embedding (e.g., security headers).</small>
+                  </div>
+
+                  <!-- External Browser Sub-Card -->
+                  <div class="glass-card settings-sub-card">
+                    <div class="flex align-center justify-between">
+                      <div>
+                        <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">🌐 Open External Browser</h3>
+                        <p class="text-muted" style="font-size: 0.75rem;">Escape in-app browsers into device default browser.</p>
+                      </div>
+                      <label class="switch">
+                        <input type="checkbox" id="linkExternalBrowserEnabled">
+                        <span class="slider"></span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Password Protection Sub-Card -->
+                  <div class="glass-card settings-sub-card" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <div class="flex align-center justify-between">
+                      <div>
+                        <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">🔒 Password Protection</h3>
+                        <p class="text-muted" style="font-size: 0.75rem;">Require a password to access destination.</p>
+                      </div>
+                      <label class="switch">
+                        <input type="checkbox" id="linkPasswordProtectionEnabled">
+                        <span class="slider"></span>
+                      </label>
+                    </div>
+                    <div id="linkPasswordFields" class="hidden" style="border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 0.75rem;">
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="linkPasswordValue" class="form-label" style="font-size: 0.8rem;">Set Password</label>
+                        <input type="text" id="linkPasswordValue" class="form-input" placeholder="Enter password key">
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- OG Settings Sub-Card -->
+                  <div class="glass-card settings-sub-card" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <div>
+                      <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">🏷️ Open Graph Settings</h3>
+                      <p class="text-muted" style="font-size: 0.75rem;">Custom title & tags parsed during social sharing previews.</p>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 0.75rem;">
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="linkOgTitle" class="form-label" style="font-size: 0.8rem;">OG Custom Title</label>
+                        <input type="text" id="linkOgTitle" class="form-input" placeholder="e.g., Special Offer Title">
                       </div>
                       <div class="form-group" style="margin-bottom: 0;">
-                        <div class="flex align-center justify-between mb-1">
-                          <label for="manualFooterAdScript" class="form-label" style="margin-bottom:0;">Footer Ad Script</label>
-                          <label class="switch" style="transform: scale(0.85);">
-                            <input type="checkbox" id="manualFooterAdEnabled">
-                            <span class="slider"></span>
-                          </label>
-                        </div>
-                        <textarea id="manualFooterAdScript" class="form-input" rows="2" style="font-family: monospace; font-size: 0.75rem;" placeholder="<!-- Footer script -->"></textarea>
+                        <label for="linkOgDescription" class="form-label" style="font-size: 0.8rem;">OG Custom Description</label>
+                        <input type="text" id="linkOgDescription" class="form-input" placeholder="e.g., Short promo description text">
                       </div>
                       <div class="form-group" style="margin-bottom: 0;">
-                        <div class="flex align-center justify-between mb-1">
-                          <label for="manualCustomAdScript" class="form-label" style="margin-bottom:0;">Custom/Extra Ad Script</label>
-                          <label class="switch" style="transform: scale(0.85);">
-                            <input type="checkbox" id="manualCustomAdEnabled">
-                            <span class="slider"></span>
-                          </label>
-                        </div>
-                        <textarea id="manualCustomAdScript" class="form-input" rows="2" style="font-family: monospace; font-size: 0.75rem;" placeholder="<!-- Custom script -->"></textarea>
+                        <label for="linkOgImageUrl" class="form-label" style="font-size: 0.8rem;">OG Custom Image URL</label>
+                        <input type="url" id="linkOgImageUrl" class="form-input" placeholder="https://example.com/social-preview.png">
                       </div>
                     </div>
                   </div>
+
+                  <!-- Device Redirect Sub-Card -->
+                  <div class="glass-card settings-sub-card" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <div class="flex align-center justify-between">
+                      <div>
+                        <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">📱 Device Redirection</h3>
+                        <p class="text-muted" style="font-size: 0.75rem;">Route users based on their device operating system.</p>
+                      </div>
+                      <label class="switch">
+                        <input type="checkbox" id="linkDeviceRedirectEnabled">
+                        <span class="slider"></span>
+                      </label>
+                    </div>
+                    <div id="linkDeviceFields" class="hidden" style="display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 0.75rem;">
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="linkDesktopUrl" class="form-label" style="font-size: 0.8rem;">Desktop Redirect URL</label>
+                        <input type="url" id="linkDesktopUrl" class="form-input" placeholder="https://desktop.domain.com">
+                      </div>
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="linkAndroidUrl" class="form-label" style="font-size: 0.8rem;">Android Redirect (Play Store)</label>
+                        <input type="url" id="linkAndroidUrl" class="form-input" placeholder="https://play.google.com/store/...">
+                      </div>
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="linkIosUrl" class="form-label" style="font-size: 0.8rem;">iPhone/iPad Redirect (App Store)</label>
+                        <input type="url" id="linkIosUrl" class="form-input" placeholder="https://apps.apple.com/app/...">
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Geo Redirect Sub-Card -->
+                  <div class="glass-card settings-sub-card" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <div class="flex align-center justify-between">
+                      <div>
+                        <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">🌍 Geo-Targeting Redirect</h3>
+                        <p class="text-muted" style="font-size: 0.75rem;">Redirect visitors based on their current country.</p>
+                      </div>
+                      <label class="switch">
+                        <input type="checkbox" id="linkGeoRedirectEnabled">
+                        <span class="slider"></span>
+                      </label>
+                    </div>
+                    <div id="linkGeoFields" class="hidden" style="display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 0.75rem;">
+                      <label class="form-label" style="font-size: 0.8rem;">Country Routing Rules</label>
+                      <div id="geoRulesListContainer" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <!-- Geo rows injected by JS -->
+                      </div>
+                      <button type="button" id="addGeoRuleBtn" class="btn btn-secondary btn-sm" style="font-size:0.75rem;">+ Add Geo Rule</button>
+                      <div class="form-group" style="margin-bottom: 0; margin-top: 0.5rem;">
+                        <label for="linkGeoDefaultUrl" class="form-label" style="font-size: 0.8rem;">Default Fallback URL</label>
+                        <input type="url" id="linkGeoDefaultUrl" class="form-input" placeholder="https://fallback.domain.com">
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
 
-                <!-- Ads & Countdown Bypass Sub-Card -->
-                <div class="glass-card settings-sub-card" style="padding: 1rem; background: rgba(0,0,0,0.15); border-color: rgba(255,255,255,0.03);">
-                  <div class="flex align-center justify-between">
-                    <div>
-                      <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">⏱️ Ads & Countdown</h3>
-                      <p class="text-muted" style="font-size: 0.75rem;">Enable/Disable visitor landing & countdown page.</p>
-                    </div>
-                    <label class="switch">
-                      <input type="checkbox" id="linkAdsCountdownEnabled" checked>
-                      <span class="slider"></span>
-                    </label>
-                  </div>
-                </div>
-
-                <!-- Cloaking Sub-Card -->
-                <div class="glass-card settings-sub-card" style="padding: 1rem; background: rgba(0,0,0,0.15); border-color: rgba(255,255,255,0.03);">
-                  <div class="flex align-center justify-between mb-2">
-                    <div>
-                      <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">🎭 Link Cloaking</h3>
-                      <p class="text-muted" style="font-size: 0.75rem;">Mask destination URL inside an iframe wrapper.</p>
-                    </div>
-                    <label class="switch">
-                      <input type="checkbox" id="linkCloakingEnabled">
-                      <span class="slider"></span>
-                    </label>
-                  </div>
-                  <small class="text-warning" style="font-size: 0.725rem; display: block;">⚠️ Some websites may block iframe embedding (e.g., security headers).</small>
-                </div>
-
-
-                <!-- External Browser Sub-Card -->
-                <div class="glass-card settings-sub-card" style="padding: 1rem; background: rgba(0,0,0,0.15); border-color: rgba(255,255,255,0.03);">
-                  <div class="flex align-center justify-between">
-                    <div>
-                      <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">🌐 Open External Browser</h3>
-                      <p class="text-muted" style="font-size: 0.75rem;">Escape in-app browsers into device default browser.</p>
-                    </div>
-                    <label class="switch">
-                      <input type="checkbox" id="linkExternalBrowserEnabled">
-                      <span class="slider"></span>
-                    </label>
-                  </div>
-                </div>
-
-                <!-- Password Protection Sub-Card -->
-                <div class="glass-card settings-sub-card" style="padding: 1rem; background: rgba(0,0,0,0.15); border-color: rgba(255,255,255,0.03); display: flex; flex-direction: column; gap: 0.75rem;">
-                  <div class="flex align-center justify-between">
-                    <div>
-                      <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">🔒 Password Protection</h3>
-                      <p class="text-muted" style="font-size: 0.75rem;">Require a password to access destination.</p>
-                    </div>
-                    <label class="switch">
-                      <input type="checkbox" id="linkPasswordProtectionEnabled">
-                      <span class="slider"></span>
-                    </label>
-                  </div>
-                  <div id="linkPasswordFields" class="hidden" style="border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 0.75rem;">
-                    <div class="form-group" style="margin-bottom: 0;">
-                      <label for="linkPasswordValue" class="form-label" style="font-size: 0.8rem;">Set Password</label>
-                      <input type="text" id="linkPasswordValue" class="form-input" placeholder="Enter password key">
-                    </div>
-                  </div>
-                </div>
-
-                <!-- OG Settings Sub-Card -->
-                <div class="glass-card settings-sub-card" style="padding: 1rem; background: rgba(0,0,0,0.15); border-color: rgba(255,255,255,0.03); display: flex; flex-direction: column; gap: 0.75rem;">
-                  <div>
-                    <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">🏷️ Open Graph Settings</h3>
-                    <p class="text-muted" style="font-size: 0.75rem;">Custom title & tags parsed during social sharing previews.</p>
-                  </div>
-                  <div style="display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 0.75rem;">
-                    <div class="form-group" style="margin-bottom: 0;">
-                      <label for="linkOgTitle" class="form-label" style="font-size: 0.8rem;">OG Custom Title</label>
-                      <input type="text" id="linkOgTitle" class="form-input" placeholder="e.g., Special Offer Title">
-                    </div>
-                    <div class="form-group" style="margin-bottom: 0;">
-                      <label for="linkOgDescription" class="form-label" style="font-size: 0.8rem;">OG Custom Description</label>
-                      <input type="text" id="linkOgDescription" class="form-input" placeholder="e.g., Short promo description text">
-                    </div>
-                    <div class="form-group" style="margin-bottom: 0;">
-                      <label for="linkOgImageUrl" class="form-label" style="font-size: 0.8rem;">OG Custom Image URL</label>
-                      <input type="url" id="linkOgImageUrl" class="form-input" placeholder="https://example.com/social-preview.png">
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Device Redirect Sub-Card -->
-                <div class="glass-card settings-sub-card" style="padding: 1rem; background: rgba(0,0,0,0.15); border-color: rgba(255,255,255,0.03); display: flex; flex-direction: column; gap: 0.75rem;">
-                  <div class="flex align-center justify-between">
-                    <div>
-                      <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">📱 Device Redirection</h3>
-                      <p class="text-muted" style="font-size: 0.75rem;">Route users based on their device operating system.</p>
-                    </div>
-                    <label class="switch">
-                      <input type="checkbox" id="linkDeviceRedirectEnabled">
-                      <span class="slider"></span>
-                    </label>
-                  </div>
-                  <div id="linkDeviceFields" class="hidden" style="display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 0.75rem;">
-                    <div class="form-group" style="margin-bottom: 0;">
-                      <label for="linkDesktopUrl" class="form-label" style="font-size: 0.8rem;">Desktop Redirect URL</label>
-                      <input type="url" id="linkDesktopUrl" class="form-input" placeholder="https://desktop.domain.com">
-                    </div>
-                    <div class="form-group" style="margin-bottom: 0;">
-                      <label for="linkAndroidUrl" class="form-label" style="font-size: 0.8rem;">Android Redirect (Play Store)</label>
-                      <input type="url" id="linkAndroidUrl" class="form-input" placeholder="https://play.google.com/store/...">
-                    </div>
-                    <div class="form-group" style="margin-bottom: 0;">
-                      <label for="linkIosUrl" class="form-label" style="font-size: 0.8rem;">iPhone/iPad Redirect (App Store)</label>
-                      <input type="url" id="linkIosUrl" class="form-input" placeholder="https://apps.apple.com/app/...">
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Geo Redirect Sub-Card -->
-                <div class="glass-card settings-sub-card" style="padding: 1rem; background: rgba(0,0,0,0.15); border-color: rgba(255,255,255,0.03); display: flex; flex-direction: column; gap: 0.75rem;">
-                  <div class="flex align-center justify-between">
-                    <div>
-                      <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">🌍 Geo-Targeting Redirect</h3>
-                      <p class="text-muted" style="font-size: 0.75rem;">Redirect visitors based on their current country.</p>
-                    </div>
-                    <label class="switch">
-                      <input type="checkbox" id="linkGeoRedirectEnabled">
-                      <span class="slider"></span>
-                    </label>
-                  </div>
-                  <div id="linkGeoFields" class="hidden" style="display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 0.75rem;">
-                    <label class="form-label" style="font-size: 0.8rem;">Country Routing Rules</label>
-                    <div id="geoRulesListContainer" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.5rem;">
-                      <!-- Geo rows injected by JS -->
-                    </div>
-                    <button type="button" id="addGeoRuleBtn" class="btn btn-secondary btn-sm" style="font-size:0.75rem;">+ Add Geo Rule</button>
-                    <div class="form-group" style="margin-bottom: 0; margin-top: 0.5rem;">
-                      <label for="linkGeoDefaultUrl" class="form-label" style="font-size: 0.8rem;">Default Fallback URL</label>
-                      <input type="url" id="linkGeoDefaultUrl" class="form-input" placeholder="https://fallback.domain.com (if no country rule matches)">
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-              <button type="submit" id="createLinkSubmitBtn" class="btn btn-primary w-full mt-4">
-                <span>Create Shortened Link</span>
-              </button>
-            </form>
-
-            <!-- Shortened URL Output Display (hidden by default) -->
-            <div id="linkResultBox" class="glass-card hidden mt-4" style="background: rgba(20, 184, 166, 0.05); border-color: rgba(20, 184, 166, 0.2); padding: 1.25rem;">
-              <span class="form-label text-success">Link Generated Successfully!</span>
-              
-              <!-- Favicon + Title Live Preview -->
-              <div id="resultLinkPreview" class="flex align-center gap-2 mt-2" style="margin-bottom: 0.75rem; border-bottom: 1px dashed rgba(20, 184, 166, 0.15); padding-bottom: 0.75rem;">
-                <img id="resultFavicon" src="" style="width: 16px; height: 16px; border-radius: 2px; flex-shrink: 0;" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%239ca3af%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><circle cx=%2212%22 cy=%2212%22 r=%2210%22></circle><line x1=%222%22 y1=%2212%22 x2=%2222%22 y2=%2212%22></line><path d=%22M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z%22></path></svg>';">
-                <span id="resultTitle" style="font-size: 0.9rem; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;">Untitled Link</span>
-              </div>
-
-              <div class="flex align-center gap-2 mt-2">
-                <input type="text" id="resultShortUrl" class="form-input" readonly style="font-family: monospace; font-weight: 600; color: var(--color-accent);">
-                <button type="button" id="copyResultBtn" class="btn btn-primary" style="padding: 0.75rem 1rem;" title="Copy to clipboard">
-                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                <button type="submit" id="createLinkSubmitBtn" class="btn btn-primary w-full mt-4">
+                  <span>Create Shortened Link</span>
                 </button>
+              </form>
+
+              <!-- Shortened URL Output Display (hidden by default) -->
+              <div id="linkResultBox" class="glass-card hidden mt-4" style="background: rgba(59, 130, 246, 0.05); border-color: rgba(59, 130, 246, 0.2); padding: 1.25rem;">
+                <span class="form-label text-success">Link Generated Successfully!</span>
+                
+                <!-- Favicon + Title Live Preview -->
+                <div id="resultLinkPreview" class="flex align-center gap-2 mt-2" style="margin-bottom: 0.75rem; border-bottom: 1px dashed rgba(59, 130, 246, 0.15); padding-bottom: 0.75rem;">
+                  <img id="resultFavicon" src="" style="width: 16px; height: 16px; border-radius: 2px; flex-shrink: 0;" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%239ca3af%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><circle cx=%2212%22 cy=%2212%22 r=%2210%22></circle><line x1=%222%22 y1=%2212%22 x2=%2222%22 y2=%2212%22></line><path d=%22M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z%22></path></svg>';">
+                  <span id="resultTitle" style="font-size: 0.9rem; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;">Untitled Link</span>
+                </div>
+
+                <div class="flex align-center gap-2 mt-2">
+                  <input type="text" id="resultShortUrl" class="form-input" readonly style="font-family: monospace; font-weight: 600; color: var(--color-accent);">
+                  <button type="button" id="copyResultBtn" class="btn btn-primary" style="padding: 0.75rem 1rem;" title="Copy to clipboard">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Links List Table Card -->
-        <div class="glass-card">
-          <div class="panel-header">
-            <h2 class="panel-title">🔗 Shortened URLs</h2>
-          </div>
-          <div class="panel-body" style="padding: 1.25rem;">
-            
-            <!-- Actions Bar: Search links -->
-            <div class="actions-bar">
-              <div class="search-wrapper">
-                <span class="search-icon">🔍</span>
-                <input type="text" id="searchInput" class="form-input search-input" placeholder="Search by code or original URL...">
+        <!-- Tab 2: Shortened URLs list card panel -->
+        <div class="tab-content links-tab-content">
+          <div class="glass-card">
+            <div class="panel-header">
+              <h2 class="panel-title">🔗 Shortened URLs</h2>
+            </div>
+            <div class="panel-body" style="padding: 1.25rem;">
+              
+              <!-- Actions Bar -->
+              <div class="actions-bar">
+                <div class="search-wrapper">
+                  <span class="search-icon">🔍</span>
+                  <input type="text" id="searchInput" class="form-input search-input" placeholder="Search by code or original URL...">
+                </div>
+              </div>
+
+              <!-- Data Table -->
+              <div class="table-responsive">
+                <table class="links-table">
+                  <thead>
+                    <tr>
+                      <th>Short Link</th>
+                      <th>Destination URL</th>
+                      <th class="text-center">Created</th>
+                      <th class="text-center">Clicks</th>
+                      <th class="text-center">Active</th>
+                      <th class="text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="linksTableBody">
+                    <tr>
+                      <td colspan="6" class="text-center text-muted" style="padding: 3rem 0;">
+                        <div class="spinner"></div>
+                        <p class="mt-2">Fetching short links...</p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
-
-            <!-- Table -->
-            <div class="table-responsive">
-              <table class="links-table">
-                <thead>
-                  <tr>
-                    <th>Short Link</th>
-                    <th>Destination URL</th>
-                    <th class="text-center">Created</th>
-                    <th class="text-center">Clicks</th>
-                    <th class="text-center">Active</th>
-                    <th class="text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="linksTableBody">
-                  <!-- JS dynamically populates here -->
-                  <tr>
-                    <td colspan="6" class="text-center text-muted" style="padding: 3rem 0;">
-                      <div class="spinner"></div>
-                      <p class="mt-2">Fetching short links...</p>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
           </div>
+        </div>
+
+        <!-- Tab 3: Custom Web Component Settings configurations -->
+        <div class="tab-content adsetup-tab-content">
+          <ad-settings-component id="adSettingsComponent"></ad-settings-component>
         </div>
 
       </div>
-
-      <!-- RIGHT PANEL: Web Component Settings Configuration -->
-      <ad-settings-component id="adSettingsComponent"></ad-settings-component>
-
     </div>
   </div>
 
-  <!-- 3. Edit Link Modal -->
+  <!-- 3. Edit Link Modal overlay popup -->
   <div id="editModal" class="modal-overlay">
     <div class="glass-card modal-content">
       <div class="panel-header">
         <h2 class="panel-title">✏️ Edit Short Link</h2>
         <button id="closeEditModalBtn" class="btn-icon-only" aria-label="Close modal">✕</button>
       </div>
-      <div class="panel-body">
+      <div class="panel-body" style="max-height: 80vh; overflow-y: auto;">
         <form id="editLinkForm">
           <input type="hidden" id="editLinkId">
           <div class="form-group">
@@ -474,7 +513,7 @@
           <div id="editAdvancedOptionsContainer" class="hidden" style="border-top: 1px dashed var(--border-glass); padding-top: 1.5rem; margin-top: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; max-height: 400px; overflow-y: auto; padding-right: 0.5rem; margin-bottom: 1.5rem;">
             
             <!-- Ad Setup Settings Sub-Card -->
-            <div class="glass-card settings-sub-card" style="padding: 1rem; background: rgba(0,0,0,0.15); border-color: rgba(255,255,255,0.03);">
+            <div class="glass-card settings-sub-card">
               <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
                 <span>📢 Ad Setup Configuration</span>
               </h3>
@@ -514,6 +553,7 @@
                   <label for="editManualButtonText" class="form-label">Continue Button Text</label>
                   <input type="text" id="editManualButtonText" class="form-input" placeholder="Click to Continue" value="Click to Continue">
                 </div>
+                
                 <!-- Manual Ad Scripts Slots -->
                 <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.5rem;">
                   <div class="form-group" style="margin-bottom: 0;">
@@ -561,7 +601,7 @@
             </div>
 
             <!-- Ads & Countdown Bypass Sub-Card -->
-            <div class="glass-card settings-sub-card" style="padding: 1rem; background: rgba(0,0,0,0.15); border-color: rgba(255,255,255,0.03);">
+            <div class="glass-card settings-sub-card">
               <div class="flex align-center justify-between">
                 <div>
                   <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">⏱️ Ads & Countdown</h3>
@@ -575,7 +615,7 @@
             </div>
 
             <!-- Cloaking Sub-Card -->
-            <div class="glass-card settings-sub-card" style="padding: 1rem; background: rgba(0,0,0,0.15); border-color: rgba(255,255,255,0.03);">
+            <div class="glass-card settings-sub-card">
               <div class="flex align-center justify-between mb-2">
                 <div>
                   <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">🎭 Link Cloaking</h3>
@@ -589,9 +629,8 @@
               <small class="text-warning" style="font-size: 0.725rem; display: block;">⚠️ Some websites may block iframe embedding (e.g., security headers).</small>
             </div>
 
-
             <!-- External Browser Sub-Card -->
-            <div class="glass-card settings-sub-card" style="padding: 1rem; background: rgba(0,0,0,0.15); border-color: rgba(255,255,255,0.03);">
+            <div class="glass-card settings-sub-card">
               <div class="flex align-center justify-between">
                 <div>
                   <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">🌐 Open External Browser</h3>
@@ -605,7 +644,7 @@
             </div>
 
             <!-- Password Protection Sub-Card -->
-            <div class="glass-card settings-sub-card" style="padding: 1rem; background: rgba(0,0,0,0.15); border-color: rgba(255,255,255,0.03); display: flex; flex-direction: column; gap: 0.75rem;">
+            <div class="glass-card settings-sub-card" style="display: flex; flex-direction: column; gap: 0.75rem;">
               <div class="flex align-center justify-between">
                 <div>
                   <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">🔒 Password Protection</h3>
@@ -625,7 +664,7 @@
             </div>
 
             <!-- OG Settings Sub-Card -->
-            <div class="glass-card settings-sub-card" style="padding: 1rem; background: rgba(0,0,0,0.15); border-color: rgba(255,255,255,0.03); display: flex; flex-direction: column; gap: 0.75rem;">
+            <div class="glass-card settings-sub-card" style="display: flex; flex-direction: column; gap: 0.75rem;">
               <div>
                 <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">🏷️ Open Graph Settings</h3>
                 <p class="text-muted" style="font-size: 0.75rem;">Custom title & tags parsed during social sharing previews.</p>
@@ -647,7 +686,7 @@
             </div>
 
             <!-- Device Redirect Sub-Card -->
-            <div class="glass-card settings-sub-card" style="padding: 1rem; background: rgba(0,0,0,0.15); border-color: rgba(255,255,255,0.03); display: flex; flex-direction: column; gap: 0.75rem;">
+            <div class="glass-card settings-sub-card" style="display: flex; flex-direction: column; gap: 0.75rem;">
               <div class="flex align-center justify-between">
                 <div>
                   <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">📱 Device Redirection</h3>
@@ -675,7 +714,7 @@
             </div>
 
             <!-- Geo Redirect Sub-Card -->
-            <div class="glass-card settings-sub-card" style="padding: 1rem; background: rgba(0,0,0,0.15); border-color: rgba(255,255,255,0.03); display: flex; flex-direction: column; gap: 0.75rem;">
+            <div class="glass-card settings-sub-card" style="display: flex; flex-direction: column; gap: 0.75rem;">
               <div class="flex align-center justify-between">
                 <div>
                   <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">🌍 Geo-Targeting Redirect</h3>
@@ -694,7 +733,7 @@
                 <button type="button" id="editAddGeoRuleBtn" class="btn btn-secondary btn-sm" style="font-size:0.75rem;">+ Add Geo Rule</button>
                 <div class="form-group" style="margin-bottom: 0; margin-top: 0.5rem;">
                   <label for="editLinkGeoDefaultUrl" class="form-label" style="font-size: 0.8rem;">Default Fallback URL</label>
-                  <input type="url" id="editLinkGeoDefaultUrl" class="form-input" placeholder="https://fallback.domain.com (if no country rule matches)">
+                  <input type="url" id="editLinkGeoDefaultUrl" class="form-input" placeholder="https://fallback.domain.com">
                 </div>
               </div>
             </div>
@@ -773,7 +812,5 @@
       }
     }, 6000);
   </script>
-  <!-- Fixed Debug Page Label -->
-  <div id="debugPageLabel" class="debug-page-label">PAGE: Admin Login</div>
 </body>
 </html>
