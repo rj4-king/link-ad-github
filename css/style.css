@@ -1076,3 +1076,53 @@ input:checked + .slider:before {
   border-color: var(--color-primary);
 }
 
+/* Collapsible Ad Sections Accordion */
+.ad-section-header {
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  background: rgba(255, 255, 255, 0.01);
+  transition: background var(--transition-fast);
+}
+
+.ad-section-header:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.ad-toggle-icon {
+  display: inline-block;
+  transition: transform var(--transition-normal);
+  font-size: 1rem;
+}
+
+.chevron-icon {
+  display: inline-block;
+  transition: transform var(--transition-normal);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.ad-section-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), padding var(--transition-normal);
+  padding: 0 1rem 0;
+}
+
+.settings-sub-card.open .ad-section-content {
+  max-height: 500px; /* Big enough for textarea + helper text + button */
+  padding: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.settings-sub-card.open .ad-toggle-icon {
+  transform: rotate(45deg);
+}
+
+.settings-sub-card.open .chevron-icon {
+  transform: rotate(180deg);
+}
+

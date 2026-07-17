@@ -997,3 +997,13 @@ window.addEventListener("click", (e) => {
     notificationPanel.classList.remove("active");
   }
 });
+
+// Collapsible Ad Settings Accordion
+document.querySelectorAll(".ad-section-header").forEach(header => {
+  header.addEventListener("click", () => {
+    const card = header.closest(".settings-sub-card");
+    if (card) {
+      card.classList.toggle("open");
+    }
+  });
+});
