@@ -141,11 +141,20 @@
             }
             resolvedUrl = dest;
             console.log("[Backup Redirect] REST API retrieved URL:", resolvedUrl);
-            return resolvedUrl;
+            return data;
           }
         })
         .catch(err => {
-          console.warn("[Backup Redirect] Failed to retrieve via REST API:", err);
+          console.warn("[Backup Redirect] Failed to retrieve URL via REST API:", err);
+          return null;
+        });
+
+      // Fetch global settings config in parallel
+      const backupConfigPromise = fetch(`https://firestore.googleapis.com/v1/projects/link-short-fffd2/databases/(default)/documents/settings/config`)
+        .then(res => res.ok ? res.json() : null)
+        .catch(err => {
+          console.warn("[Backup Redirect] Failed to retrieve settings config:", err);
+          return null;
         });
 
       // Set a 5-second fail-safe timer
@@ -155,18 +164,119 @@
         if (skeletonView && !skeletonView.classList.contains("hidden")) {
           console.warn("[Backup Redirect] Skeleton screen stuck for 5 seconds. Redirecting via fallback...");
           try {
-            const destUrl = await backupFetchPromise;
-            if (destUrl) {
+            const [linkData, configData] = await Promise.all([
+              backupFetchPromise,
+              backupConfigPromise
+            ]);
+
+            // Parse fallback configurations
+            let settings = {
+              pageTitle: "Short Link Redirection | AdLinker",
+              buttonText: "Click to Continue",
+              countdown: 10,
+              autoRedirect: true,
+              adScript: ""
+            };
+
+            if (configData && configData.fields) {
+              const fields = configData.fields;
+              if (fields.pageTitle) settings.pageTitle = fields.pageTitle.stringValue;
+              if (fields.buttonText) settings.buttonText = fields.buttonText.stringValue;
+              if (fields.countdown) settings.countdown = parseInt(fields.countdown.integerValue);
+              if (fields.autoRedirect) settings.autoRedirect = fields.autoRedirect.booleanValue;
+              if (fields.adScript) settings.adScript = fields.adScript.stringValue;
+
+              // Advanced script fields
+              if (fields.headerAdScript) settings.headerAdScript = fields.headerAdScript.stringValue;
+              if (fields.headerAdEnabled) settings.headerAdEnabled = fields.headerAdEnabled.booleanValue;
+              if (fields.bodyAdScript) settings.bodyAdScript = fields.bodyAdScript.stringValue;
+              if (fields.bodyAdEnabled) settings.bodyAdEnabled = fields.bodyAdEnabled.booleanValue;
+              if (fields.footerAdScript) settings.footerAdScript = fields.footerAdScript.stringValue;
+              if (fields.footerAdEnabled) settings.footerAdEnabled = fields.footerAdEnabled.booleanValue;
+              if (fields.customAdScript) settings.customAdScript = fields.customAdScript.stringValue;
+              if (fields.customAdEnabled) settings.customAdEnabled = fields.customAdEnabled.booleanValue;
+            }
+
+            if (linkData && linkData.fields && linkData.fields.originalUrl && linkData.fields.status?.booleanValue !== false) {
+              let destUrl = linkData.fields.originalUrl.stringValue;
+              if (destUrl && !/^https?:\/\//i.test(destUrl)) {
+                destUrl = "https://" + destUrl;
+              }
               console.log("[Backup Redirect] Fallback trigger successful. Routing to:", destUrl);
               window.location.href = destUrl;
             } else {
-              showTimeoutError();
+              // If the short code does not exist, show the missing link/ads-only view
+              console.log("[Backup Redirect] Short link code does not exist. Rendering missing link fallback page...");
+              showMissingLinkFallback(settings);
             }
           } catch (e) {
+            console.error("[Backup Redirect] Fallback query exception:", e);
             showTimeoutError();
           }
         }
       }, 5000);
+
+      function showMissingLinkFallback(settings) {
+        const skeletonView = document.getElementById("skeletonView");
+        const missingLinkView = document.getElementById("missingLinkView");
+        
+        if (skeletonView) skeletonView.classList.add("hidden");
+        if (missingLinkView) {
+          missingLinkView.classList.remove("hidden");
+          
+          // Inject ads inside fallback page container
+          const suffix = "missingAd";
+          const hasAnyNewAd = (settings.headerAdEnabled && settings.headerAdScript) ||
+                              (settings.bodyAdEnabled && settings.bodyAdScript) ||
+                              (settings.footerAdEnabled && settings.footerAdScript) ||
+                              (settings.customAdEnabled && settings.customAdScript);
+                              
+          if (hasAnyNewAd) {
+            if (settings.headerAdEnabled && settings.headerAdScript) {
+              injectFallbackAd(settings.headerAdScript, `${suffix}ContainerHeader`);
+            }
+            if (settings.bodyAdEnabled && settings.bodyAdScript) {
+              injectFallbackAd(settings.bodyAdScript, `${suffix}ContainerBody`);
+            }
+            if (settings.footerAdEnabled && settings.footerAdScript) {
+              injectFallbackAd(settings.footerAdScript, `${suffix}ContainerFooter`);
+            }
+            if (settings.customAdEnabled && settings.customAdScript) {
+              injectFallbackAd(settings.customAdScript, `${suffix}ContainerExtra`);
+            }
+          } else if (settings.adScript) {
+            injectFallbackAd(settings.adScript, `${suffix}ContainerBody`);
+          }
+        }
+      }
+
+      function injectFallbackAd(adScriptHtml, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        const parentSpace = container.parentElement;
+        if (parentSpace) parentSpace.classList.remove("hidden");
+        try {
+          const parser = new DOMParser();
+          const docParsed = parser.parseFromString(adScriptHtml, "text/html");
+          Array.from(docParsed.body.childNodes).forEach(node => {
+            if (node.nodeType === Node.ELEMENT_NODE && node.tagName !== "SCRIPT") {
+              container.appendChild(node.cloneNode(true));
+            } else if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+              container.appendChild(document.createTextNode(node.textContent));
+            }
+          });
+          Array.from(docParsed.querySelectorAll("script")).forEach(oldScript => {
+            const newScript = document.createElement("script");
+            Array.from(oldScript.attributes).forEach(attr => {
+              newScript.setAttribute(attr.name, attr.value);
+            });
+            newScript.textContent = oldScript.textContent;
+            document.getElementById("generalAdScriptWrapper").appendChild(newScript);
+          });
+        } catch (e) {
+          console.error("[Backup Redirect] Fallback ad rendering error:", e);
+        }
+      }
 
       function showTimeoutError() {
         console.error("[Backup Redirect] Fallback failed. Rendering error view card.");

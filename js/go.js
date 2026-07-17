@@ -110,7 +110,7 @@ async function initRedirection() {
       // A. Check if the link exists
       if (!linkDocSnap.exists()) {
         clearTimeout(fallbackTimer);
-        await logRedirectFailure(sanitizedCode, "Short code does not exist.");
+        logRedirectFailure(sanitizedCode, "Short code does not exist.");
         showMissingLinkPage(settings);
         return;
       }
@@ -120,7 +120,7 @@ async function initRedirection() {
       // B. Check link active status
       if (linkData.status !== true) {
         clearTimeout(fallbackTimer);
-        await logRedirectFailure(sanitizedCode, "Short link is disabled by administrator.");
+        logRedirectFailure(sanitizedCode, "Short link is disabled by administrator.");
         showMissingLinkPage(settings);
         return;
       }
@@ -163,7 +163,7 @@ async function initRedirection() {
       const configDocSnap = await getDoc(configDocRef);
       parseSettings(configDocSnap, settings);
       
-      await logRedirectFailure("none", "Link code parameter is missing in URL.");
+      logRedirectFailure("none", "Link code parameter is missing in URL.");
       showMissingLinkPage(settings);
     }
     
