@@ -17,6 +17,15 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Ad Setups Collection Rules
+    match /adSetups/{adSetupId} {
+      // Anyone can read ad configurations (for loading scripts, timer, autoRedirect)
+      allow read: if true;
+      
+      // Only authenticated admins can write/modify ad setups
+      allow write: if isAdmin();
+    }
+
     // Links Collection Rules
     match /links/{linkId} {
       // Anyone can look up a short link document (to resolve the redirection destination)

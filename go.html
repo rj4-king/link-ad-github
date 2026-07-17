@@ -104,8 +104,38 @@
         <span class="ad-badge-label">Sponsored Content</span>
         <div id="missingAdContainerExtra" class="w-full"></div>
       </div>
+    <!-- 5. Password Prompt Card (Shown if link is password protected) -->
+    <div id="passwordView" class="glass-card redirect-card hidden" style="max-width: 440px; padding: 3rem 2rem; margin: 0 auto;">
+      <div style="font-size: 3.5rem; margin-bottom: 1.25rem;">🔒</div>
+      <h2>Password Required</h2>
+      <p class="text-secondary mt-2" style="font-size: 0.95rem; margin-bottom: 1.75rem;">This link is password protected. Enter the password to continue.</p>
+      <form id="passwordForm" autocomplete="off" onsubmit="event.preventDefault();">
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+          <input type="password" id="passwordInput" class="form-input" placeholder="Enter password key" required style="text-align: center; font-size: 1.1rem; letter-spacing: 0.1em; max-width: 100%;">
+        </div>
+        <button type="submit" id="unlockBtn" class="btn btn-primary w-full" style="padding: 0.85rem 1.5rem; font-size: 1rem;">
+          Unlock Link
+        </button>
+      </form>
     </div>
 
+  </div>
+
+  <!-- 6. Cloaked Frame View (Shown when link cloaking is active) -->
+  <div id="cloakingView" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 999999; background: #0b0c10; display: flex; flex-direction: column;">
+    <!-- Top Bar warning -->
+    <div style="background: rgba(22, 25, 38, 0.95); border-bottom: 1px solid var(--border-glass); padding: 0.65rem 1.5rem; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(12px);">
+      <div class="flex align-center gap-2" style="font-size: 0.85rem; color: var(--text-secondary);">
+        <img id="cloakFavicon" src="" style="width: 16px; height: 16px; border-radius: 2px;" onerror="this.style.display='none';">
+        <span id="cloakTitle" style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">Preview Mode</span>
+        <span class="text-muted" style="font-size: 0.75rem; opacity: 0.8;">| Some websites may block iframe embedding.</span>
+      </div>
+      <a id="cloakDirectLink" href="#" class="btn btn-secondary btn-sm" style="font-size: 0.725rem; padding: 0.25rem 0.65rem;">
+        Open Directly
+      </a>
+    </div>
+    <!-- Embedded Iframe -->
+    <iframe id="cloakIframe" src="" style="flex: 1; width: 100%; height: 100%; border: none; background: white;"></iframe>
   </div>
 
   <!-- Ad Script general execution wrapper (for scripts that execute in window/document level context) -->

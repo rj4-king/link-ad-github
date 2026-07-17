@@ -40,6 +40,55 @@ let fallbackTimer = null;
 // 1. Initialization and Parallel Data Lookup
 // ----------------------------------------------------
 
+async function fetchCountryCode() {
+  try {
+    const res = await fetch("https://freeipapi.com/api/json");
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.countryCode) {
+        return data.countryCode.toUpperCase();
+      }
+    }
+  } catch (err) {
+    console.warn("freeipapi failed, falling back to ipapi.co...", err);
+  }
+  
+  try {
+    const res = await fetch("https://ipapi.co/json/");
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.country_code) {
+        return data.country_code.toUpperCase();
+      }
+    }
+  } catch (err) {
+    console.error("IP Geolocation failed:", err);
+  }
+  return null;
+}
+
+function setOpenGraphMeta(ogData) {
+  if (!ogData) return;
+  const updateOrCreateMeta = (property, content) => {
+    if (!content) return;
+    let meta = document.querySelector(`meta[property="${property}"]`);
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.setAttribute("property", property);
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute("content", content);
+  };
+  
+  updateOrCreateMeta("og:title", ogData.title);
+  updateOrCreateMeta("og:description", ogData.description);
+  updateOrCreateMeta("og:image", ogData.imageUrl);
+  
+  if (ogData.title) {
+    document.title = ogData.title;
+  }
+}
+
 async function initRedirection() {
   if (redirectionStarted) return;
   redirectionStarted = true;
@@ -50,20 +99,11 @@ async function initRedirection() {
   const urlParams = new URLSearchParams(window.location.search);
   const code = urlParams.get("code") || urlParams.get("c");
   
-  // Default fallback configurations
-  let settings = {
-    pageTitle: "Short Link Redirection | AdLinker",
-    buttonText: "Click to Continue",
+  let fallbackSettings = {
     countdown: 10,
     autoRedirect: true,
-    headerAdScript: "",
-    headerAdEnabled: false,
-    bodyAdScript: "",
-    bodyAdEnabled: false,
-    footerAdScript: "",
-    footerAdEnabled: false,
-    customAdScript: "",
-    customAdEnabled: false
+    continueButtonText: "Click to Continue",
+    messagePageEnabled: false
   };
 
   // Schedule a 5-second fallback backup timer inside JS
@@ -82,9 +122,6 @@ async function initRedirection() {
                 backupUrl = "https://" + backupUrl;
               }
               console.log("[go.js Fail-safe] Successful fallback query. Redirecting immediately:", backupUrl);
-              console.log("Current Page: PAGE: Short Link Redirect");
-              const debugLabel = document.getElementById("debugPageLabel");
-              if (debugLabel) debugLabel.textContent = "PAGE: Short Link Redirect";
               window.location.href = backupUrl;
               return;
             }
@@ -98,25 +135,18 @@ async function initRedirection() {
   }, 5000);
 
   try {
-    const configDocRef = doc(db, "settings", "config");
-    
     if (code) {
       const sanitizedCode = code.trim().toLowerCase();
       const linkDocRef = doc(db, "links", sanitizedCode);
 
-      // Fetch short link and global settings configuration in parallel
-      const [linkDocSnap, configDocSnap] = await Promise.all([
-        getDoc(linkDocRef),
-        getDoc(configDocRef)
-      ]);
+      // 1. Fetch short link document
+      const linkDocSnap = await getDoc(linkDocRef);
       
-      parseSettings(configDocSnap, settings);
-
       // A. Check if the link exists
       if (!linkDocSnap.exists()) {
         clearTimeout(fallbackTimer);
         logRedirectFailure(sanitizedCode, "Short code does not exist.");
-        showMissingLinkPage(settings);
+        showMissingLinkPage(fallbackSettings);
         return;
       }
       
@@ -126,56 +156,114 @@ async function initRedirection() {
       if (linkData.status !== true) {
         clearTimeout(fallbackTimer);
         logRedirectFailure(sanitizedCode, "Short link is disabled by administrator.");
-        showMissingLinkPage(settings);
+        showMissingLinkPage(fallbackSettings);
         return;
       }
 
-      destinationUrl = linkData.originalUrl;
-      // Ensure original URL has a protocol before routing to prevent relative loops
+      // C. Resolve resolved destination URL
+      let targetUrl = linkData.originalUrl;
+
+      // Device Redirection
+      if (linkData.deviceRedirectEnabled) {
+        const ua = navigator.userAgent || navigator.vendor || window.opera;
+        if (/android/i.test(ua)) {
+          if (linkData.androidUrl) targetUrl = linkData.androidUrl;
+        } else if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) {
+          if (linkData.iosUrl) targetUrl = linkData.iosUrl;
+        } else {
+          if (linkData.desktopUrl) targetUrl = linkData.desktopUrl;
+        }
+      }
+
+      // Geo Redirection
+      if (linkData.geoRedirectEnabled) {
+        const countryCode = await fetchCountryCode();
+        if (countryCode && linkData.geoRules && linkData.geoRules[countryCode]) {
+          targetUrl = linkData.geoRules[countryCode];
+        } else if (linkData.geoDefaultUrl) {
+          targetUrl = linkData.geoDefaultUrl;
+        }
+      }
+
+      destinationUrl = targetUrl;
       if (destinationUrl && !/^https?:\/\//i.test(destinationUrl)) {
         destinationUrl = "https://" + destinationUrl;
       }
       
-      // Clear fallback timer as the main SDK retrieved data successfully
       clearTimeout(fallbackTimer);
       
-      // C. Increment click count in Firestore (background write)
+      // D. Increment clicks count in Firestore (background write)
       updateDoc(linkDocRef, {
         clicks: increment(1)
       }).catch(err => {
         console.warn("Failed to increment click counter:", err);
       });
       
-      // D. Apply config states to DOM
-      document.title = settings.pageTitle;
-      pageTitleDisplay.textContent = settings.pageTitle;
-      customButtonText = settings.buttonText;
-      autoRedirect = settings.autoRedirect;
-      totalTime = settings.countdown;
-      timeLeft = settings.countdown;
-      
-      // E. Lazy load active ad script blocks
-      injectAdScripts(settings, false);
-      
-      // F. Transition UI and Start timer countdown
-      skeletonView.classList.add("hidden");
-      countdownView.classList.remove("hidden");
-      
-      // Update Debug Label to Redirect screen
-      const debugLabel = document.getElementById("debugPageLabel");
-      if (debugLabel) debugLabel.textContent = "PAGE: Short Link Redirect";
-      console.log("Current Page: PAGE: Short Link Redirect");
+      // E. Custom OG tags override
+      setOpenGraphMeta({
+        title: linkData.ogTitle,
+        description: linkData.ogDescription,
+        imageUrl: linkData.ogImageUrl
+      });
 
-      startTimer();
+      // F. Resolve Ad Setup
+      let adSetup = null;
+      if (linkData.adSetupOption === "manual" && linkData.manualAdSettings) {
+        adSetup = linkData.manualAdSettings;
+      } else {
+        let setupId = "default";
+        if (linkData.adSetupOption === "select" && linkData.adSetupId) {
+          setupId = linkData.adSetupId;
+        }
+        
+        try {
+          const setupDocRef = doc(db, "adSetups", setupId);
+          const setupDocSnap = await getDoc(setupDocRef);
+          if (setupDocSnap.exists() && setupDocSnap.data().enabled !== false) {
+            adSetup = setupDocSnap.data();
+          }
+        } catch (e) {
+          console.warn("Failed to query custom ad setup, falling back to default...", e);
+        }
+        
+        if (!adSetup) {
+          try {
+            const defaultDocRef = doc(db, "adSetups", "default");
+            const defaultDocSnap = await getDoc(defaultDocRef);
+            if (defaultDocSnap.exists()) {
+              adSetup = defaultDocSnap.data();
+            }
+          } catch (e) {}
+        }
+      }
+
+      if (!adSetup) {
+        adSetup = fallbackSettings;
+      }
+
+      // G. Password Protection checking
+      if (linkData.passwordProtectionEnabled && linkData.passwordProtectionValue) {
+        skeletonView.classList.add("hidden");
+        const passwordView = document.getElementById("passwordView");
+        passwordView.classList.remove("hidden");
+        
+        document.getElementById("passwordForm").addEventListener("submit", (e) => {
+          e.preventDefault();
+          const enteredPassword = document.getElementById("passwordInput").value;
+          if (enteredPassword === linkData.passwordProtectionValue) {
+            proceedToCountdown(linkData, adSetup);
+          } else {
+            alert("Incorrect password. Please try again.");
+          }
+        });
+      } else {
+        proceedToCountdown(linkData, adSetup);
+      }
       
     } else {
       clearTimeout(fallbackTimer);
-      // Code parameter missing entirely
-      const configDocSnap = await getDoc(configDocRef);
-      parseSettings(configDocSnap, settings);
-      
       logRedirectFailure("none", "Link code parameter is missing in URL.");
-      showMissingLinkPage(settings);
+      showMissingLinkPage(fallbackSettings);
     }
     
   } catch (error) {
@@ -187,31 +275,45 @@ async function initRedirection() {
   }
 }
 
-// Helper to parse settings configurations
-function parseSettings(configDocSnap, settings) {
-  try {
-    if (configDocSnap && configDocSnap.exists()) {
-      const configData = configDocSnap.data();
-      settings.pageTitle = configData.pageTitle || settings.pageTitle;
-      settings.buttonText = configData.buttonText || settings.buttonText;
-      settings.countdown = configData.countdown || settings.countdown;
-      settings.autoRedirect = configData.autoRedirect !== false;
-      
-      // Legacy general ad script fallback
-      settings.adScript = configData.adScript || "";
-      
-      // Load individual ad properties
-      settings.headerAdScript = configData.headerAdScript || "";
-      settings.headerAdEnabled = configData.headerAdEnabled === true;
-      settings.bodyAdScript = configData.bodyAdScript || "";
-      settings.bodyAdEnabled = configData.bodyAdEnabled === true;
-      settings.footerAdScript = configData.footerAdScript || "";
-      settings.footerAdEnabled = configData.footerAdEnabled === true;
-      settings.customAdScript = configData.customAdScript || "";
-      settings.customAdEnabled = configData.customAdEnabled === true;
-    }
-  } catch (e) {
-    console.error("Failed to parse settings:", e);
+// Proceed to timer & ads execution after password unlock
+function proceedToCountdown(linkData, adSetup) {
+  // Hide password screen if any
+  document.getElementById("passwordView").classList.add("hidden");
+
+  // Determine redirection details based on message page or standard ad config
+  let pageTitle = adSetup.name || "Redirecting...";
+  if (linkData.messagePageEnabled) {
+    pageTitle = linkData.messagePageTitle || "Confirm Redirection";
+    pageTitleDisplay.textContent = pageTitle;
+    pageSubtitleDisplay.textContent = linkData.messagePageText || "Please confirm to continue to your destination.";
+    customButtonText = linkData.messagePageButton || "Continue";
+    autoRedirect = false;
+  } else {
+    pageTitleDisplay.textContent = adSetup.name || "Your link is almost ready...";
+    pageSubtitleDisplay.textContent = "Please wait for the timer to unlock the destination URL.";
+    customButtonText = adSetup.continueButtonText || "Click to Continue";
+    autoRedirect = adSetup.autoRedirect !== false;
+  }
+  document.title = pageTitle;
+
+  totalTime = adSetup.countdown !== undefined ? adSetup.countdown : 10;
+  timeLeft = totalTime;
+
+  // Render script blocks
+  injectAdScripts(adSetup, false);
+
+  skeletonView.classList.add("hidden");
+  countdownView.classList.remove("hidden");
+  
+  const debugLabel = document.getElementById("debugPageLabel");
+  if (debugLabel) debugLabel.textContent = "PAGE: Short Link Redirect";
+
+  // Handle direct bypass option
+  if (linkData.adsCountdownEnabled === false) {
+    timeLeft = 0;
+    handleTimerComplete(linkData);
+  } else {
+    startTimer(linkData);
   }
 }
 
@@ -226,12 +328,11 @@ function showError(title, subtitle) {
     skeletonView.classList.add("hidden");
     countdownView.classList.add("hidden");
     missingLinkView.classList.add("hidden");
+    document.getElementById("passwordView").classList.add("hidden");
     errorView.classList.remove("hidden");
 
-    // Update Debug Label
     const debugLabel = document.getElementById("debugPageLabel");
     if (debugLabel) debugLabel.textContent = "PAGE: Redirection Error";
-    console.log("Current Page: PAGE: Redirection Error");
   } catch (e) {
     console.error("Failed to show error view:", e);
   }
@@ -247,13 +348,12 @@ function showMissingLinkPage(settings) {
     // Transition UI
     skeletonView.classList.add("hidden");
     countdownView.classList.add("hidden");
+    document.getElementById("passwordView").classList.add("hidden");
     errorView.classList.add("hidden");
     missingLinkView.classList.remove("hidden");
 
-    // Update Debug Label
     const debugLabel = document.getElementById("debugPageLabel");
     if (debugLabel) debugLabel.textContent = "PAGE: Link Code Missing";
-    console.log("Current Page: PAGE: Link Code Missing");
   } catch (e) {
     console.error("Failed to show missing page:", e);
   }
@@ -285,9 +385,6 @@ function injectAdScripts(settings, isMissingPage) {
       if (settings.customAdEnabled && settings.customAdScript) {
         injectSingleAd(settings.customAdScript, `${suffix}ContainerExtra`);
       }
-    } else if (settings.adScript) {
-      // Fallback to legacy general ad script in the body container if no new ad slots are configured
-      injectSingleAd(settings.adScript, `${suffix}ContainerBody`);
     }
   } catch (e) {
     console.error("Failed to inject ad scripts:", e);
@@ -298,14 +395,12 @@ function injectSingleAd(adScriptHtml, containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
   
-  // Make parent container space visible
   const parentSpace = container.parentElement;
   if (parentSpace) {
     parentSpace.classList.remove("hidden");
   }
   
   try {
-    // Hijack document.write and document.writeln temporarily to prevent wipe on mobile
     const originalWrite = document.write;
     const originalWriteln = document.writeln;
     
@@ -325,7 +420,6 @@ function injectSingleAd(adScriptHtml, containerId) {
     const parser = new DOMParser();
     const docParsed = parser.parseFromString(adScriptHtml, "text/html");
     
-    // Copy visual layout elements
     Array.from(docParsed.body.childNodes).forEach(node => {
       if (node.nodeType === Node.ELEMENT_NODE && node.tagName !== "SCRIPT") {
         container.appendChild(node.cloneNode(true));
@@ -334,7 +428,6 @@ function injectSingleAd(adScriptHtml, containerId) {
       }
     });
     
-    // Inject scripts to execute in general execution context
     Array.from(docParsed.querySelectorAll("script")).forEach(oldScript => {
       const newScript = document.createElement("script");
       Array.from(oldScript.attributes).forEach(attr => {
@@ -344,7 +437,6 @@ function injectSingleAd(adScriptHtml, containerId) {
       generalAdScriptWrapper.appendChild(newScript);
     });
 
-    // Restore original document.write after scripts finish immediate execution
     setTimeout(() => {
       document.write = originalWrite;
       document.writeln = originalWriteln;
@@ -356,7 +448,7 @@ function injectSingleAd(adScriptHtml, containerId) {
 }
 
 // ----------------------------------------------------
-// 5. Log Redirection Errors to Notifications Center
+// 4. Log Redirection Errors to Notifications Center
 // ----------------------------------------------------
 
 async function logRedirectFailure(code, reason) {
@@ -374,10 +466,10 @@ async function logRedirectFailure(code, reason) {
 }
 
 // ----------------------------------------------------
-// 6. Circular Countdown Timer Logic
+// 5. Circular Countdown Timer Logic
 // ----------------------------------------------------
 
-function startTimer() {
+function startTimer(linkData) {
   try {
     countdownNumber.textContent = timeLeft;
     timerCircleProgress.style.strokeDashoffset = "0";
@@ -391,7 +483,7 @@ function startTimer() {
       
       if (timeLeft <= 0) {
         clearInterval(countdownInterval);
-        handleTimerComplete();
+        handleTimerComplete(linkData);
       }
     }, 1000);
   } catch (e) {
@@ -399,25 +491,97 @@ function startTimer() {
   }
 }
 
-function handleTimerComplete() {
+function handleTimerComplete(linkData) {
   try {
     redirectBtn.removeAttribute("disabled");
     redirectBtnText.textContent = customButtonText;
     
-    redirectBtn.addEventListener("click", () => {
-      console.log("[go.js] Button clicked. Routing to destination:", destinationUrl);
-      window.location.href = destinationUrl;
-    });
+    const clickHandler = () => {
+      console.log("[go.js] Button clicked. Triggering routing pipeline...");
+      triggerFinalRedirection(linkData);
+    };
+    
+    redirectBtn.addEventListener("click", clickHandler);
 
     if (autoRedirect) {
-      console.log("[go.js] Auto redirecting to destination:", destinationUrl);
+      console.log("[go.js] Auto redirecting...");
       setTimeout(() => {
-        window.location.replace(destinationUrl);
+        triggerFinalRedirection(linkData);
       }, 500);
     }
   } catch (e) {
     console.error("Timer complete operations failed:", e);
   }
+}
+
+// Escape in-app browsers into device default browser
+function attemptExternalBrowser(url) {
+  const ua = navigator.userAgent || navigator.vendor || window.opera;
+  const isInApp = /FBAN|FBAV|Instagram|Telegram|Messenger|WeChat|MicroMessenger/i.test(ua);
+  
+  if (/android/i.test(ua) && isInApp) {
+    const cleanUrl = url.replace(/^https?:\/\//, "");
+    const intentUrl = `intent://${cleanUrl}#Intent;scheme=https;end;`;
+    window.location.href = intentUrl;
+    
+    setTimeout(() => {
+      window.location.replace(url);
+    }, 1500);
+    return true;
+  }
+  
+  if (/iPad|iPhone|iPod/.test(ua) && isInApp) {
+    window.open(url, "_system");
+    window.location.href = url;
+    setTimeout(() => {
+      window.location.replace(url);
+    }, 1500);
+    return true;
+  }
+  
+  return false;
+}
+
+// Final Redirection Routing pipeline
+function triggerFinalRedirection(linkData) {
+  // A. Check if link cloaking is enabled
+  if (linkData.linkCloakingEnabled) {
+    const cloakingView = document.getElementById("cloakingView");
+    const cloakIframe = document.getElementById("cloakIframe");
+    const cloakTitle = document.getElementById("cloakTitle");
+    const cloakFavicon = document.getElementById("cloakFavicon");
+    const cloakDirectLink = document.getElementById("cloakDirectLink");
+    
+    if (cloakingView && cloakIframe) {
+      // Clear body overflow to prevent double scrollbars
+      document.body.style.overflow = "hidden";
+      
+      // Update top-bar details
+      if (cloakTitle) cloakTitle.textContent = linkData.title || "Cloaked View";
+      if (cloakFavicon && linkData.faviconUrl) {
+        cloakFavicon.src = linkData.faviconUrl;
+        cloakFavicon.style.display = "inline";
+      }
+      if (cloakDirectLink) cloakDirectLink.href = destinationUrl;
+      
+      // Load iframe source
+      cloakIframe.src = destinationUrl;
+      
+      // Transition UI to cloaked screen
+      countdownView.classList.add("hidden");
+      cloakingView.classList.remove("hidden");
+      return;
+    }
+  }
+
+  // B. Attempt default external browser launch if requested
+  if (linkData.externalBrowserEnabled) {
+    const launched = attemptExternalBrowser(destinationUrl);
+    if (launched) return;
+  }
+
+  // C. Fallback to standard client-side redirection
+  window.location.replace(destinationUrl);
 }
 
 // Run loader on entry
