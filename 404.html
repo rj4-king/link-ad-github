@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,6 +16,7 @@
       justify-content: center;
       margin: 0;
     }
+
     .bg-gradient-mesh {
       position: fixed;
       top: 0;
@@ -22,11 +24,12 @@
       width: 100vw;
       height: 100vh;
       z-index: -1;
-      background: 
+      background:
         radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
         radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.12) 0%, transparent 45%);
       filter: blur(80px);
     }
+
     .glass-card {
       background: rgba(22, 25, 38, 0.7);
       backdrop-filter: blur(16px);
@@ -39,6 +42,7 @@
       width: 90%;
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
     }
+
     .spinner {
       width: 3rem;
       height: 3rem;
@@ -48,11 +52,19 @@
       animation: spin 0.8s linear infinite;
       display: inline-block;
     }
+
     .text-secondary {
       color: #9ca3af;
     }
-    .mt-6 { margin-top: 1.5rem; }
-    .mt-2 { margin-top: 0.5rem; }
+
+    .mt-6 {
+      margin-top: 1.5rem;
+    }
+
+    .mt-2 {
+      margin-top: 0.5rem;
+    }
+
     .btn {
       display: inline-flex;
       align-items: center;
@@ -65,21 +77,27 @@
       text-decoration: none;
       transition: all 0.2s;
     }
+
     .btn-primary {
       background: linear-gradient(135deg, #6366f1, #a855f7);
       color: white;
     }
+
     .btn-primary:hover {
       filter: brightness(1.1);
     }
+
     @keyframes spin {
-      to { transform: rotate(360deg); }
+      to {
+        transform: rotate(360deg);
+      }
     }
   </style>
 </head>
+
 <body>
   <div class="bg-gradient-mesh"></div>
-  
+
   <div class="redirect-container">
     <div class="glass-card redirect-card" style="max-width: 400px; padding: 2.5rem 1.5rem;">
       <div class="spinner spinner-lg"></div>
@@ -90,14 +108,36 @@
 
   <script>
     // GitHub Pages Custom Clean URL Router supporting Subfolders
-    (function() {
+    (function () {
       const pathname = window.location.pathname;
+
+      // Helper to determine the relative path prefix to the site root
+      function getRelativeRoot() {
+        const isGitHubPages = window.location.hostname.endsWith('github.io');
+        const segments = window.location.pathname.split('/').filter(Boolean);
+        const endsWithSlash = window.location.pathname.endsWith('/');
+        
+        let depth = segments.length;
+        if (!endsWithSlash && depth > 0) {
+          depth--;
+        }
+        // If hosted on GitHub Pages (e.g. username.github.io/repo-name/),
+        // the first segment is the repository name, so it's part of the root path.
+        if (isGitHubPages && depth > 0) {
+          depth--;
+        }
+        
+        if (depth <= 0) return './';
+        return '../'.repeat(depth);
+      }
+
+      const relativeRoot = getRelativeRoot();
 
       // 1. Detect if root path (ends with slash, or is empty, or is index.html)
       if (pathname === '/' || pathname.endsWith('/') || pathname.endsWith('/index.html')) {
         // Construct path to index.html in the same directory context
-        const base = pathname.endsWith('/index.html') 
-          ? pathname.slice(0, -10) 
+        const base = pathname.endsWith('/index.html')
+          ? pathname.slice(0, -10)
           : pathname;
         window.location.replace(base + 'index.html');
         return;
@@ -106,7 +146,7 @@
       // 2. Clean up segments
       const segments = pathname.split('/').filter(Boolean);
       if (segments.length === 0) {
-        window.location.replace('/index.html');
+        window.location.replace(relativeRoot + 'index.html');
         return;
       }
 
@@ -114,11 +154,11 @@
       const code = segments[segments.length - 1];
 
       // Check if it looks like a system file or static folder
-      const isSystemFile = code.includes('.') || 
-                           code === 'admin' || 
-                           code === 'go' ||
-                           segments.includes('css') || 
-                           segments.includes('js');
+      const isSystemFile = code.includes('.') ||
+        code === 'admin' ||
+        code === 'go' ||
+        segments.includes('css') ||
+        segments.includes('js');
 
       if (isSystemFile) {
         // If it is an actual missing file/resource, show a custom 404 styling
@@ -128,18 +168,15 @@
           <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
           <h2>Page Not Found</h2>
           <p class="text-secondary mt-2">The requested resource could not be found.</p>
-          <a href="./index.html" class="btn btn-primary mt-6">Go to Admin Dashboard</a>
+          <a href="${relativeRoot}index.html" class="btn btn-primary mt-6">Go to Admin Dashboard</a>
         `;
         return;
       }
 
-      // 3. Determine the base path for redirect (all segments except the last code)
-      const baseSegments = segments.slice(0, -1);
-      const basePath = '/' + baseSegments.map(s => s + '/').join('');
-      
-      // Redirect to go.html with code query param
-      window.location.replace(basePath + 'go.html?code=' + encodeURIComponent(code));
+      // Redirect to go.html with code query param using the computed relative path to the root
+      window.location.replace(relativeRoot + 'go.html?code=' + encodeURIComponent(code));
     })();
   </script>
 </body>
+
 </html>
