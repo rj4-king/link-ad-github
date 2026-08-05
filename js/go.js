@@ -538,32 +538,135 @@ function handleTimerComplete(linkData) {
   }
 }
 
-// Escape in-app browsers into device default browser
+// ─────────────────────────────────────────────────────────────────
+// Force-open URL in the device's default external browser.
+// Tries multiple techniques in sequence; returns true if at least
+// one launcher was fired (the page may still remain open while the
+// OS switches apps — that is expected behaviour).
+// ─────────────────────────────────────────────────────────────────
 function attemptExternalBrowser(url) {
-  const ua = navigator.userAgent || navigator.vendor || window.opera;
-  const isInApp = /FBAN|FBAV|Instagram|Telegram|Messenger|WeChat|MicroMessenger/i.test(ua);
-  
-  if (/android/i.test(ua) && isInApp) {
+  const ua = navigator.userAgent || navigator.vendor || window.opera || "";
+  const isAndroid = /android/i.test(ua);
+  const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+  // Detect common in-app browsers (Facebook, Instagram, TikTok, Telegram, WeChat…)
+  const isInApp = /FBAN|FBAV|Instagram|Telegram|Messenger|WeChat|MicroMessenger|Line|TikTok|Snapchat|Twitter|musical_ly/i.test(ua);
+
+  console.log("[ExternalBrowser] ua:", ua.substring(0, 120));
+  console.log("[ExternalBrowser] isAndroid:", isAndroid, "| isIOS:", isIOS, "| isInApp:", isInApp);
+
+  // ── Android ───────────────────────────────────────────────────
+  if (isAndroid) {
+    // 1. Android Intent URI – forces Chrome (or system default browser)
     const cleanUrl = url.replace(/^https?:\/\//, "");
-    const intentUrl = `intent://${cleanUrl}#Intent;scheme=https;action=android.intent.action.VIEW;package=com.android.chrome;end;`;
-    window.location.href = intentUrl;
-    
+    const scheme   = url.startsWith("https") ? "https" : "http";
+    const intentUrl = `intent://${cleanUrl}#Intent;scheme=${scheme};action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(url)};end;`;
+
+    try {
+      window.location.href = intentUrl;
+    } catch (e) {
+      console.warn("[ExternalBrowser] Intent URI failed:", e);
+    }
+
+    // 2. After a short delay, also try window.open as a second shot
     setTimeout(() => {
-      window.location.replace(url);
-    }, 1500);
+      try { window.open(url, "_blank", "noopener,noreferrer"); } catch(e) {}
+    }, 600);
+
+    // 3. Final safety net — replace current location
+    setTimeout(() => {
+      try { window.location.replace(url); } catch(e) {}
+    }, 2000);
+
     return true;
   }
-  
-  if (/iPad|iPhone|iPod/.test(ua) && isInApp) {
-    window.open(url, "_system");
-    window.location.href = url;
+
+  // ── iOS ───────────────────────────────────────────────────────
+  if (isIOS) {
+    // 1. x-safari-https:// — deeplink that opens Safari directly
+    //    Works inside Facebook, Instagram, Messenger in-app browsers
+    const safariScheme = url.replace(/^https:\/\//, "x-safari-https://")
+                            .replace(/^http:\/\//, "x-safari-http://");
+    try {
+      window.location.href = safariScheme;
+    } catch (e) {
+      console.warn("[ExternalBrowser] x-safari scheme failed:", e);
+    }
+
+    // 2. _system target — works in some Cordova / hybrid webview contexts
     setTimeout(() => {
-      window.location.replace(url);
-    }, 1500);
+      try { window.open(url, "_system"); } catch(e) {}
+    }, 400);
+
+    // 3. Standard window.open
+    setTimeout(() => {
+      try { window.open(url, "_blank", "noopener,noreferrer"); } catch(e) {}
+    }, 800);
+
+    // 4. Location replace
+    setTimeout(() => {
+      try { window.location.replace(url); } catch(e) {}
+    }, 2000);
+
     return true;
   }
-  
+
+  // ── Desktop / unknown ─────────────────────────────────────────
+  // On desktop there is no "external browser" concept — open in a new tab.
+  try {
+    const w = window.open(url, "_blank", "noopener,noreferrer");
+    if (w) { w.focus(); return true; }
+  } catch(e) {
+    console.warn("[ExternalBrowser] window.open failed:", e);
+  }
+
+  // Popup was blocked — fall through so triggerFinalRedirection shows manual link
   return false;
+}
+
+// Show an in-page banner/prompt so the user can manually open the link
+// if every automatic attempt is blocked.
+function showExternalBrowserFallback(url) {
+  // Don't add duplicate banners
+  if (document.getElementById("extBrowserBanner")) return;
+
+  const banner = document.createElement("div");
+  banner.id = "extBrowserBanner";
+  banner.style.cssText = [
+    "position:fixed",
+    "bottom:0","left:0","right:0",
+    "background:#1a1a1a",
+    "border-top:1px solid #2e2e2e",
+    "padding:1rem 1.25rem",
+    "display:flex",
+    "align-items:center",
+    "justify-content:space-between",
+    "gap:0.75rem",
+    "z-index:999999",
+    "flex-wrap:wrap",
+  ].join(";");
+
+  banner.innerHTML = `
+    <div style="display:flex;align-items:center;gap:0.6rem;flex:1;min-width:0">
+      <svg width="20" height="20" fill="none" stroke="#3b82f6" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0">
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/>
+      </svg>
+      <span style="font-size:0.82rem;color:#e5e5e5;font-family:Inter,system-ui,sans-serif;line-height:1.4">
+        Tap <strong>Open</strong> to continue in your browser.
+      </span>
+    </div>
+    <div style="display:flex;gap:0.5rem;flex-shrink:0">
+      <a href="${url}" target="_blank" rel="noopener noreferrer"
+         style="display:inline-flex;align-items:center;gap:0.35rem;background:#3b82f6;color:#fff;border:none;padding:0.55rem 1rem;border-radius:5px;font-size:0.82rem;font-family:Inter,system-ui,sans-serif;font-weight:500;text-decoration:none;cursor:pointer;min-height:40px">
+        Open
+      </a>
+      <button onclick="document.getElementById('extBrowserBanner').remove()"
+              style="background:transparent;border:1px solid #2e2e2e;color:#999;padding:0.4rem 0.65rem;border-radius:5px;font-size:0.78rem;font-family:Inter,system-ui,sans-serif;cursor:pointer;min-height:40px">
+        ✕
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(banner);
 }
 
 // Pre-flight check if website blocks iframe framing
@@ -606,29 +709,34 @@ async function checkIfFrameable(url) {
 
 // Final Redirection Routing pipeline
 function triggerFinalRedirection(linkData) {
-  // A. Check if link cloaking is enabled and frameable check passed
+  // A. Link cloaking (iframe wrapper)
   if (linkData.linkCloakingEnabled && isFrameableResult) {
     const cloakingView = document.getElementById("cloakingView");
-    const cloakIframe = document.getElementById("cloakIframe");
-    
+    const cloakIframe  = document.getElementById("cloakIframe");
     if (cloakingView && cloakIframe) {
       document.body.style.overflow = "hidden";
       cloakIframe.src = destinationUrl;
-      
-      // Transition UI to cloaked screen (no exit bars or headers)
       countdownView.classList.add("hidden");
       cloakingView.classList.remove("hidden");
       return;
     }
   }
 
-  // B. Attempt default external browser launch if requested
+  // B. Force external browser — always attempted, regardless of in-app detection
   if (linkData.externalBrowserEnabled) {
+    console.log("[go.js] External browser mode active. Forcing OS-level launch...");
     const launched = attemptExternalBrowser(destinationUrl);
-    if (launched) return;
+    if (!launched) {
+      // All automatic methods were blocked (e.g., desktop popup blocker).
+      // Show a visible manual-open banner as the last resort.
+      showExternalBrowserFallback(destinationUrl);
+    }
+    // Do NOT fall through to window.location.replace — we want the
+    // user to stay on the current page so the banner / OS switch works.
+    return;
   }
 
-  // C. Fallback to standard client-side redirection
+  // C. Standard redirection
   window.location.replace(destinationUrl);
 }
 
