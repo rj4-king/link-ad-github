@@ -522,19 +522,34 @@ function handleTimerComplete(linkData) {
   try {
     redirectBtn.removeAttribute("disabled");
     redirectBtnText.textContent = customButtonText;
-    
-    const clickHandler = () => {
-      console.log("[go.js] Button clicked. Triggering routing pipeline...");
-      triggerFinalRedirection(linkData);
+
+    const adSetup = linkData._resolvedAdSetup;
+    const hasBgLinks = adSetup && adSetup.bgLinksEnabled === true && Array.isArray(adSetup.bgLinks) && adSetup.bgLinks.length > 0;
+
+    let redirectionTriggered = false;
+
+    const executeRedirection = (isUserGesture) => {
+      if (redirectionTriggered) return;
+      redirectionTriggered = true;
+      console.log("[go.js] Triggering redirection pipeline. User gesture:", isUserGesture);
+      triggerFinalRedirection(linkData, isUserGesture);
     };
-    
-    redirectBtn.addEventListener("click", clickHandler);
+
+    // Bind click handlers to button and page container for user gesture
+    redirectBtn.addEventListener("click", () => executeRedirection(true));
+
+    if (hasBgLinks) {
+      // Glow button to invite tap for popup permission
+      redirectBtn.style.boxShadow = "0 0 15px rgba(59, 130, 246, 0.6)";
+    }
 
     if (autoRedirect) {
-      console.log("[go.js] Auto redirecting...");
+      console.log("[go.js] Auto redirect scheduled...");
       setTimeout(() => {
-        triggerFinalRedirection(linkData);
-      }, 500);
+        if (!redirectionTriggered) {
+          executeRedirection(false);
+        }
+      }, 700);
     }
   } catch (e) {
     console.error("Timer complete operations failed:", e);
@@ -543,23 +558,13 @@ function handleTimerComplete(linkData) {
 
 // ─────────────────────────────────────────────────────────────────
 // Force-open URL in the device's default external browser.
-// Tries multiple techniques in sequence; returns true if at least
-// one launcher was fired (the page may still remain open while the
-// OS switches apps — that is expected behaviour).
 // ─────────────────────────────────────────────────────────────────
 function attemptExternalBrowser(url) {
   const ua = navigator.userAgent || navigator.vendor || window.opera || "";
   const isAndroid = /android/i.test(ua);
   const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
-  // Detect common in-app browsers (Facebook, Instagram, TikTok, Telegram, WeChat…)
-  const isInApp = /FBAN|FBAV|Instagram|Telegram|Messenger|WeChat|MicroMessenger|Line|TikTok|Snapchat|Twitter|musical_ly/i.test(ua);
 
-  console.log("[ExternalBrowser] ua:", ua.substring(0, 120));
-  console.log("[ExternalBrowser] isAndroid:", isAndroid, "| isIOS:", isIOS, "| isInApp:", isInApp);
-
-  // ── Android ───────────────────────────────────────────────────
   if (isAndroid) {
-    // 1. Android Intent URI – forces Chrome (or system default browser)
     const cleanUrl = url.replace(/^https?:\/\//, "");
     const scheme   = url.startsWith("https") ? "https" : "http";
     const intentUrl = `intent://${cleanUrl}#Intent;scheme=${scheme};action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(url)};end;`;
@@ -569,76 +574,44 @@ function attemptExternalBrowser(url) {
     } catch (e) {
       console.warn("[ExternalBrowser] Intent URI failed:", e);
     }
-
-    // 2. After a short delay, also try window.open as a second shot
     setTimeout(() => {
       try { window.open(url, "_blank", "noopener,noreferrer"); } catch(e) {}
     }, 600);
-
-    // 3. Final safety net — replace current location
     setTimeout(() => {
       try { window.location.replace(url); } catch(e) {}
     }, 2000);
-
     return true;
   }
 
-  // ── iOS ───────────────────────────────────────────────────────
   if (isIOS) {
-    // 1. x-safari-https:// — deeplink that opens Safari directly
-    //    Works inside Facebook, Instagram, Messenger in-app browsers
-    const safariScheme = url.replace(/^https:\/\//, "x-safari-https://")
-                            .replace(/^http:\/\//, "x-safari-http://");
-    try {
-      window.location.href = safariScheme;
-    } catch (e) {
-      console.warn("[ExternalBrowser] x-safari scheme failed:", e);
-    }
-
-    // 2. _system target — works in some Cordova / hybrid webview contexts
-    setTimeout(() => {
-      try { window.open(url, "_system"); } catch(e) {}
-    }, 400);
-
-    // 3. Standard window.open
-    setTimeout(() => {
-      try { window.open(url, "_blank", "noopener,noreferrer"); } catch(e) {}
-    }, 800);
-
-    // 4. Location replace
-    setTimeout(() => {
-      try { window.location.replace(url); } catch(e) {}
-    }, 2000);
-
+    const safariScheme = url.replace(/^https:\/\//, "x-safari-https://").replace(/^http:\/\//, "x-safari-http://");
+    try { window.location.href = safariScheme; } catch (e) {}
+    setTimeout(() => { try { window.open(url, "_system"); } catch(e) {} }, 400);
+    setTimeout(() => { try { window.open(url, "_blank", "noopener,noreferrer"); } catch(e) {} }, 800);
+    setTimeout(() => { try { window.location.replace(url); } catch(e) {} }, 2000);
     return true;
   }
 
-  // ── Desktop / unknown ─────────────────────────────────────────
-  // On desktop there is no "external browser" concept — open in a new tab.
   try {
     const w = window.open(url, "_blank", "noopener,noreferrer");
     if (w) { w.focus(); return true; }
-  } catch(e) {
-    console.warn("[ExternalBrowser] window.open failed:", e);
-  }
+  } catch(e) {}
 
-  // Popup was blocked — fall through so triggerFinalRedirection shows manual link
   return false;
 }
 
-// Show an in-page banner/prompt so the user can manually open the link
-// if every automatic attempt is blocked.
-function showExternalBrowserFallback(url) {
-  // Don't add duplicate banners
-  if (document.getElementById("extBrowserBanner")) return;
+// Show an in-page banner/prompt for sponsor content / external browser fallback
+function showExternalBrowserFallback(url, customMessage) {
+  if (document.getElementById("extBrowserBanner_" + btoa(url.substring(0, 30)).replace(/[^a-zA-Z0-9]/g, ''))) return;
 
+  const bannerId = "extBrowserBanner_" + btoa(url.substring(0, 30)).replace(/[^a-zA-Z0-9]/g, '');
   const banner = document.createElement("div");
-  banner.id = "extBrowserBanner";
+  banner.id = bannerId;
   banner.style.cssText = [
     "position:fixed",
     "bottom:0","left:0","right:0",
     "background:#1a1a1a",
-    "border-top:1px solid #2e2e2e",
+    "border-top:1px solid #3b82f6",
     "padding:1rem 1.25rem",
     "display:flex",
     "align-items:center",
@@ -646,23 +619,26 @@ function showExternalBrowserFallback(url) {
     "gap:0.75rem",
     "z-index:999999",
     "flex-wrap:wrap",
+    "box-shadow:0 -4px 20px rgba(0,0,0,0.5)"
   ].join(";");
+
+  const msg = customMessage || "Tap <strong>Open</strong> to view content in your browser.";
 
   banner.innerHTML = `
     <div style="display:flex;align-items:center;gap:0.6rem;flex:1;min-width:0">
       <svg width="20" height="20" fill="none" stroke="#3b82f6" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0">
         <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/>
       </svg>
-      <span style="font-size:0.82rem;color:#e5e5e5;font-family:Inter,system-ui,sans-serif;line-height:1.4">
-        Tap <strong>Open</strong> to continue in your browser.
+      <span style="font-size:0.85rem;color:#e5e5e5;font-family:Inter,system-ui,sans-serif;line-height:1.4">
+        ${msg}
       </span>
     </div>
     <div style="display:flex;gap:0.5rem;flex-shrink:0">
-      <a href="${url}" target="_blank" rel="noopener noreferrer"
-         style="display:inline-flex;align-items:center;gap:0.35rem;background:#3b82f6;color:#fff;border:none;padding:0.55rem 1rem;border-radius:5px;font-size:0.82rem;font-family:Inter,system-ui,sans-serif;font-weight:500;text-decoration:none;cursor:pointer;min-height:40px">
+      <a href="${url}" target="_blank" rel="noopener noreferrer" onclick="this.parentElement.parentElement.remove()"
+         style="display:inline-flex;align-items:center;gap:0.35rem;background:#3b82f6;color:#fff;border:none;padding:0.55rem 1.1rem;border-radius:5px;font-size:0.85rem;font-family:Inter,system-ui,sans-serif;font-weight:600;text-decoration:none;cursor:pointer;min-height:40px">
         Open
       </a>
-      <button onclick="document.getElementById('extBrowserBanner').remove()"
+      <button onclick="this.parentElement.parentElement.remove()"
               style="background:transparent;border:1px solid #2e2e2e;color:#999;padding:0.4rem 0.65rem;border-radius:5px;font-size:0.78rem;font-family:Inter,system-ui,sans-serif;cursor:pointer;min-height:40px">
         ✕
       </button>
@@ -676,50 +652,40 @@ function showExternalBrowserFallback(url) {
 async function checkIfFrameable(url) {
   try {
     const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-    
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3500);
-    
-    const response = await fetch(proxyUrl, { 
-      method: "HEAD", 
-      signal: controller.signal 
-    });
+    const response = await fetch(proxyUrl, { method: "HEAD", signal: controller.signal });
     clearTimeout(timeoutId);
     
     const xFrame = response.headers.get("x-frame-options") || response.headers.get("X-Frame-Options");
     const csp = response.headers.get("content-security-policy") || response.headers.get("Content-Security-Policy");
-    
     if (xFrame) {
       const val = xFrame.toLowerCase();
-      if (val.includes("deny") || val.includes("sameorigin")) {
-        return false;
-      }
+      if (val.includes("deny") || val.includes("sameorigin")) return false;
     }
     if (csp) {
       const val = csp.toLowerCase();
-      if (val.includes("frame-ancestors")) {
-        if (val.includes("'none'") || val.includes("'self'")) {
-          return false;
-        }
-      }
+      if (val.includes("frame-ancestors") && (val.includes("'none'") || val.includes("'self'"))) return false;
     }
     return true;
   } catch (err) {
-    console.warn("[go.js] Pre-flight frameable check failed or timed out. Defaulting to true:", err);
     return true;
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Background Link Opener
-// Opens sponsor URLs in new tabs synchronously during user click / redirect.
+// Background Link Opener (Multi-Strategy Engine)
+// Strategy 1: Direct window.open (works on user click)
+// Strategy 2: Popunder Swap (opens destination in new tab, current page goes to sponsor)
+// Strategy 3: Fallback Banner (interactive floating bar if popups are strict)
 // ─────────────────────────────────────────────────────────────────────────────
-function openBackgroundLinks(adSetup) {
+function openBackgroundLinks(adSetup, destinationUrl, isUserGesture) {
   if (!adSetup || adSetup.bgLinksEnabled !== true) return false;
   const links = adSetup.bgLinks;
   if (!Array.isArray(links) || links.length === 0) return false;
 
-  let openedAny = false;
+  let anyOpened = false;
+
   links.forEach((url) => {
     if (!url || typeof url !== "string") return;
     let safeUrl = url.trim();
@@ -728,27 +694,53 @@ function openBackgroundLinks(adSetup) {
       safeUrl = "https://" + safeUrl;
     }
 
+    // Attempt 1: Direct window.open
     try {
-      const w = window.open(safeUrl, "_blank");
-      if (w) {
-        openedAny = true;
-        console.log("[BgLinks] Background link opened:", safeUrl);
-      } else {
-        console.warn("[BgLinks] Popup blocked for:", safeUrl);
+      const win = window.open(safeUrl, "_blank");
+      if (win) {
+        anyOpened = true;
+        console.log("[BgLinks] Direct popup opened successfully:", safeUrl);
+        return;
       }
     } catch (e) {
-      console.warn("[BgLinks] Error opening background link:", safeUrl, e);
+      console.warn("[BgLinks] Direct popup failed:", e);
     }
+
+    // Attempt 2: Popunder Swap (if user gesture is present)
+    if (isUserGesture) {
+      try {
+        const destWin = window.open(destinationUrl, "_blank");
+        if (destWin) {
+          console.log("[BgLinks] Popunder swap succeeded. Current tab -> sponsor:", safeUrl);
+          window.location.href = safeUrl;
+          anyOpened = true;
+          return;
+        }
+      } catch (e2) {
+        console.warn("[BgLinks] Popunder swap failed:", e2);
+      }
+    }
+
+    // Attempt 3: Floating Sponsor Banner fallback
+    console.log("[BgLinks] Showing sponsor banner fallback for:", safeUrl);
+    showExternalBrowserFallback(safeUrl, "Sponsored Content Ready: Tap to view sponsor site.");
   });
-  return openedAny;
+
+  return anyOpened;
 }
 
 // Final Redirection Routing pipeline
-function triggerFinalRedirection(linkData) {
-  // 0. Fire background sponsor links (synchronously in user click stack)
+function triggerFinalRedirection(linkData, isUserGesture = false) {
+  // 0. Fire background sponsor links
   let bgOpened = false;
   if (linkData._resolvedAdSetup) {
-    bgOpened = openBackgroundLinks(linkData._resolvedAdSetup);
+    bgOpened = openBackgroundLinks(linkData._resolvedAdSetup, destinationUrl, isUserGesture);
+  }
+
+  // If Popunder Swap navigated the current window to the sponsor URL, stop here!
+  if (bgOpened && window.location.href !== destinationUrl && !window.location.href.includes("go.html")) {
+    console.log("[go.js] Popunder swap active. Main tab navigated to sponsor, destination in new tab.");
+    return;
   }
 
   // A. Link cloaking (iframe wrapper)
@@ -764,7 +756,7 @@ function triggerFinalRedirection(linkData) {
     }
   }
 
-  // B. Force external browser — always attempted, regardless of in-app detection
+  // B. Force external browser
   if (linkData.externalBrowserEnabled) {
     console.log("[go.js] External browser mode active. Forcing OS-level launch...");
     const launched = attemptExternalBrowser(destinationUrl);
@@ -775,9 +767,7 @@ function triggerFinalRedirection(linkData) {
   }
 
   // C. Standard redirection
-  // Delay main page replacement slightly if background tabs were opened
-  // so the browser engine completes tab creation before unloading the page.
-  const redirectDelay = bgOpened ? 250 : 0;
+  const redirectDelay = bgOpened ? 300 : 0;
   setTimeout(() => {
     window.location.replace(destinationUrl);
   }, redirectDelay);
