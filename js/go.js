@@ -312,9 +312,6 @@ function proceedToCountdown(linkData, adSetup) {
   // Hide password screen if any
   document.getElementById("passwordView").classList.add("hidden");
 
-  // Stash resolved adSetup so triggerFinalRedirection can open background links
-  linkData._resolvedAdSetup = adSetup;
-
   // Determine redirection details based on standard ad config
   let pageTitle = adSetup.pageTitle || adSetup.name || "Redirecting...";
   pageTitleDisplay.textContent = adSetup.pageTitle || adSetup.name || "Your link is almost ready...";
@@ -523,33 +520,18 @@ function handleTimerComplete(linkData) {
     redirectBtn.removeAttribute("disabled");
     redirectBtnText.textContent = customButtonText;
 
-    const adSetup = linkData._resolvedAdSetup;
-    const hasBgLinks = adSetup && adSetup.bgLinksEnabled === true && Array.isArray(adSetup.bgLinks) && adSetup.bgLinks.length > 0;
-
-    let redirectionTriggered = false;
-
-    const executeRedirection = (isUserGesture) => {
-      if (redirectionTriggered) return;
-      redirectionTriggered = true;
-      console.log("[go.js] Triggering redirection pipeline. User gesture:", isUserGesture);
-      triggerFinalRedirection(linkData, isUserGesture);
+    const clickHandler = () => {
+      console.log("[go.js] Button clicked. Triggering routing pipeline...");
+      triggerFinalRedirection(linkData);
     };
 
-    // Bind click handlers to button and page container for user gesture
-    redirectBtn.addEventListener("click", () => executeRedirection(true));
-
-    if (hasBgLinks) {
-      // Glow button to invite tap for popup permission
-      redirectBtn.style.boxShadow = "0 0 15px rgba(59, 130, 246, 0.6)";
-    }
+    redirectBtn.addEventListener("click", clickHandler);
 
     if (autoRedirect) {
-      console.log("[go.js] Auto redirect scheduled...");
+      console.log("[go.js] Auto redirecting...");
       setTimeout(() => {
-        if (!redirectionTriggered) {
-          executeRedirection(false);
-        }
-      }, 700);
+        triggerFinalRedirection(linkData);
+      }, 500);
     }
   } catch (e) {
     console.error("Timer complete operations failed:", e);
@@ -600,45 +582,43 @@ function attemptExternalBrowser(url) {
   return false;
 }
 
-// Show an in-page banner/prompt for sponsor content / external browser fallback
+// Show an in-page banner/prompt for external browser fallback
 function showExternalBrowserFallback(url, customMessage) {
-  if (document.getElementById("extBrowserBanner_" + btoa(url.substring(0, 30)).replace(/[^a-zA-Z0-9]/g, ''))) return;
+  if (document.getElementById("extBrowserBanner")) return;
 
-  const bannerId = "extBrowserBanner_" + btoa(url.substring(0, 30)).replace(/[^a-zA-Z0-9]/g, '');
   const banner = document.createElement("div");
-  banner.id = bannerId;
+  banner.id = "extBrowserBanner";
   banner.style.cssText = [
     "position:fixed",
     "bottom:0","left:0","right:0",
     "background:#1a1a1a",
-    "border-top:1px solid #3b82f6",
+    "border-top:1px solid #2e2e2e",
     "padding:1rem 1.25rem",
     "display:flex",
     "align-items:center",
     "justify-content:space-between",
     "gap:0.75rem",
     "z-index:999999",
-    "flex-wrap:wrap",
-    "box-shadow:0 -4px 20px rgba(0,0,0,0.5)"
+    "flex-wrap:wrap"
   ].join(";");
 
-  const msg = customMessage || "Tap <strong>Open</strong> to view content in your browser.";
+  const msg = customMessage || "Tap <strong>Open</strong> to continue in your browser.";
 
   banner.innerHTML = `
     <div style="display:flex;align-items:center;gap:0.6rem;flex:1;min-width:0">
       <svg width="20" height="20" fill="none" stroke="#3b82f6" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0">
         <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/>
       </svg>
-      <span style="font-size:0.85rem;color:#e5e5e5;font-family:Inter,system-ui,sans-serif;line-height:1.4">
+      <span style="font-size:0.82rem;color:#e5e5e5;font-family:Inter,system-ui,sans-serif;line-height:1.4">
         ${msg}
       </span>
     </div>
     <div style="display:flex;gap:0.5rem;flex-shrink:0">
-      <a href="${url}" target="_blank" rel="noopener noreferrer" onclick="this.parentElement.parentElement.remove()"
-         style="display:inline-flex;align-items:center;gap:0.35rem;background:#3b82f6;color:#fff;border:none;padding:0.55rem 1.1rem;border-radius:5px;font-size:0.85rem;font-family:Inter,system-ui,sans-serif;font-weight:600;text-decoration:none;cursor:pointer;min-height:40px">
+      <a href="${url}" target="_blank" rel="noopener noreferrer"
+         style="display:inline-flex;align-items:center;gap:0.35rem;background:#3b82f6;color:#fff;border:none;padding:0.55rem 1rem;border-radius:5px;font-size:0.82rem;font-family:Inter,system-ui,sans-serif;font-weight:500;text-decoration:none;cursor:pointer;min-height:40px">
         Open
       </a>
-      <button onclick="this.parentElement.parentElement.remove()"
+      <button onclick="document.getElementById('extBrowserBanner').remove()"
               style="background:transparent;border:1px solid #2e2e2e;color:#999;padding:0.4rem 0.65rem;border-radius:5px;font-size:0.78rem;font-family:Inter,system-ui,sans-serif;cursor:pointer;min-height:40px">
         ✕
       </button>
@@ -673,76 +653,8 @@ async function checkIfFrameable(url) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Background Link Opener (Multi-Strategy Engine)
-// Strategy 1: Direct window.open (works on user click)
-// Strategy 2: Popunder Swap (opens destination in new tab, current page goes to sponsor)
-// Strategy 3: Fallback Banner (interactive floating bar if popups are strict)
-// ─────────────────────────────────────────────────────────────────────────────
-function openBackgroundLinks(adSetup, destinationUrl, isUserGesture) {
-  if (!adSetup || adSetup.bgLinksEnabled !== true) return false;
-  const links = adSetup.bgLinks;
-  if (!Array.isArray(links) || links.length === 0) return false;
-
-  let anyOpened = false;
-
-  links.forEach((url) => {
-    if (!url || typeof url !== "string") return;
-    let safeUrl = url.trim();
-    if (!safeUrl) return;
-    if (!/^https?:\/\//i.test(safeUrl)) {
-      safeUrl = "https://" + safeUrl;
-    }
-
-    // Attempt 1: Direct window.open
-    try {
-      const win = window.open(safeUrl, "_blank");
-      if (win) {
-        anyOpened = true;
-        console.log("[BgLinks] Direct popup opened successfully:", safeUrl);
-        return;
-      }
-    } catch (e) {
-      console.warn("[BgLinks] Direct popup failed:", e);
-    }
-
-    // Attempt 2: Popunder Swap (if user gesture is present)
-    if (isUserGesture) {
-      try {
-        const destWin = window.open(destinationUrl, "_blank");
-        if (destWin) {
-          console.log("[BgLinks] Popunder swap succeeded. Current tab -> sponsor:", safeUrl);
-          window.location.href = safeUrl;
-          anyOpened = true;
-          return;
-        }
-      } catch (e2) {
-        console.warn("[BgLinks] Popunder swap failed:", e2);
-      }
-    }
-
-    // Attempt 3: Floating Sponsor Banner fallback
-    console.log("[BgLinks] Showing sponsor banner fallback for:", safeUrl);
-    showExternalBrowserFallback(safeUrl, "Sponsored Content Ready: Tap to view sponsor site.");
-  });
-
-  return anyOpened;
-}
-
 // Final Redirection Routing pipeline
-function triggerFinalRedirection(linkData, isUserGesture = false) {
-  // 0. Fire background sponsor links
-  let bgOpened = false;
-  if (linkData._resolvedAdSetup) {
-    bgOpened = openBackgroundLinks(linkData._resolvedAdSetup, destinationUrl, isUserGesture);
-  }
-
-  // If Popunder Swap navigated the current window to the sponsor URL, stop here!
-  if (bgOpened && window.location.href !== destinationUrl && !window.location.href.includes("go.html")) {
-    console.log("[go.js] Popunder swap active. Main tab navigated to sponsor, destination in new tab.");
-    return;
-  }
-
+function triggerFinalRedirection(linkData) {
   // A. Link cloaking (iframe wrapper)
   if (linkData.linkCloakingEnabled && isFrameableResult) {
     const cloakingView = document.getElementById("cloakingView");
@@ -767,10 +679,7 @@ function triggerFinalRedirection(linkData, isUserGesture = false) {
   }
 
   // C. Standard redirection
-  const redirectDelay = bgOpened ? 300 : 0;
-  setTimeout(() => {
-    window.location.replace(destinationUrl);
-  }, redirectDelay);
+  window.location.replace(destinationUrl);
 }
 
 // Run loader on entry

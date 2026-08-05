@@ -193,34 +193,6 @@ class AdSettingsComponent extends HTMLElement {
                   <small class="text-muted mt-1" style="font-size: 0.725rem; display: block; padding-top: 0.25rem;">Injected at the bottom of the page.</small>
                 </div>
               </div>
-              <!-- Background Link Opener Section -->
-              <div class="glass-card settings-sub-card" style="padding: 0; border-color: rgba(255,255,255,0.03); background: rgba(0,0,0,0.15); overflow: hidden; margin-top: 1.5rem; border-top: 1px dashed var(--border);">
-                <div class="ad-section-header" style="cursor:default;">
-                  <div class="flex align-center gap-2">
-                    <span style="font-size:1rem;">🔗</span>
-                    <span class="form-label" style="margin-bottom: 0; font-weight: 600; color: var(--text-primary);">Background Link Opener</span>
-                  </div>
-                  <div class="flex align-center gap-3" style="margin-left: auto;">
-                    <span class="text-secondary" style="font-size: 0.725rem;">Enable</span>
-                    <label class="switch" style="transform: scale(0.85);">
-                      <input type="checkbox" id="settingBgLinksEnabled">
-                      <span class="slider"></span>
-                    </label>
-                  </div>
-                </div>
-                <div style="padding: 0.85rem; border-top: 1px solid rgba(255,255,255,0.04);">
-                  <small class="text-muted" style="font-size: 0.725rem; display: block; margin-bottom: 0.85rem; line-height: 1.5;">
-                    When a visitor gets redirected, these sponsor links automatically open in the background (new tab/window). The visitor stays on their destination page.
-                  </small>
-                  <div id="bgLinksListContainer" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.75rem;">
-                    <!-- Rows injected by JS -->
-                  </div>
-                  <button type="button" id="addBgLinkRowBtn" class="btn btn-secondary btn-sm" style="font-size: 0.75rem;">
-                    + Add Background Link
-                  </button>
-                </div>
-              </div>
-
             </div>
 
             <div class="flex gap-2" style="border-top: 1px solid var(--border); padding-top: 1.25rem; margin-top: 1.5rem;">
@@ -325,13 +297,6 @@ function initSettingsDOMBindings() {
   settingFooterAdEnabled = document.getElementById("settingFooterAdEnabled");
   settingCustomAdScript = document.getElementById("settingCustomAdScript");
   settingCustomAdEnabled = document.getElementById("settingCustomAdEnabled");
-
-  // Background link opener bindings
-  const addBgLinkRowBtn = document.getElementById("addBgLinkRowBtn");
-  if (addBgLinkRowBtn && !addBgLinkRowBtn._bgBound) {
-    addBgLinkRowBtn._bgBound = true;
-    addBgLinkRowBtn.addEventListener("click", () => addBgLinkRow(document.getElementById("bgLinksListContainer")));
-  }
 }
 
 // DOM Elements - Modals
@@ -976,19 +941,6 @@ function addGeoRuleRow(container, country = "", url = "") {
   container.appendChild(row);
 }
 
-// Background Link Opener — add a URL row
-function addBgLinkRow(container, url = "") {
-  if (!container) return;
-  const row = document.createElement("div");
-  row.className = "flex align-center gap-2 bg-link-row";
-  row.innerHTML = `
-    <input type="url" class="form-input bg-link-input" placeholder="https://sponsor-site.com" value="${escapeHTML(url)}" style="flex:1;">
-    <button type="button" class="btn btn-icon-only" style="color:var(--color-danger);padding:0.25rem;flex-shrink:0;" title="Remove">✕</button>
-  `;
-  row.querySelector("button").addEventListener("click", () => row.remove());
-  container.appendChild(row);
-}
-
 const addGeoRuleBtn = document.getElementById("addGeoRuleBtn");
 if (addGeoRuleBtn) {
   addGeoRuleBtn.addEventListener("click", () => {
@@ -1265,9 +1217,7 @@ if (editLinkForm) {
         footerAdScript: getValue("editManualFooterAdScript"),
         footerAdEnabled: getChecked("editManualFooterAdEnabled"),
         customAdScript: getValue("editManualCustomAdScript"),
-        customAdEnabled: getChecked("editManualCustomAdEnabled"),
-        bgLinksEnabled: getChecked("editManualBgLinksEnabled"),
-        bgLinks: Array.from(document.querySelectorAll("#editManualBgLinksContainer .bg-link-input")).map(i => i.value.trim()).filter(Boolean)
+        customAdEnabled: getChecked("editManualCustomAdEnabled")
       };
   
       const docRef = doc(db, "links", id);
@@ -1473,15 +1423,6 @@ function loadSetupIntoForm(setupId) {
   settingCustomAdScript.value = setup.customAdScript || "";
   settingCustomAdEnabled.checked = setup.customAdEnabled === true;
 
-  // Background links
-  const bgLinksEnabledEl = document.getElementById("settingBgLinksEnabled");
-  const bgLinksContainer  = document.getElementById("bgLinksListContainer");
-  if (bgLinksEnabledEl) bgLinksEnabledEl.checked = setup.bgLinksEnabled === true;
-  if (bgLinksContainer) {
-    bgLinksContainer.innerHTML = "";
-    (setup.bgLinks || []).forEach(url => addBgLinkRow(bgLinksContainer, url));
-  }
-
   // Disable toggle only if this setup is already the default (prevent having no default setup)
   setupIsDefaultInput.disabled = (setup.isDefault === true);
   
@@ -1532,12 +1473,6 @@ document.addEventListener("click", (e) => {
     settingFooterAdEnabled.checked = false;
     settingCustomAdScript.value = "";
     settingCustomAdEnabled.checked = false;
-
-    // Reset background links
-    const bgLinksEnabledEl = document.getElementById("settingBgLinksEnabled");
-    const bgLinksContainer  = document.getElementById("bgLinksListContainer");
-    if (bgLinksEnabledEl) bgLinksEnabledEl.checked = false;
-    if (bgLinksContainer)  bgLinksContainer.innerHTML = "";
     
     // Show delete button
     deleteAdSetupBtn.classList.remove("hidden");
@@ -1608,15 +1543,6 @@ document.addEventListener("submit", async (e) => {
     const footerAdEnabled = settingFooterAdEnabled.checked;
     const customAdScript = settingCustomAdScript.value;
     const customAdEnabled = settingCustomAdEnabled.checked;
-
-    // Collect background links
-    const bgLinksEnabledEl = document.getElementById("settingBgLinksEnabled");
-    const bgLinksEnabled = bgLinksEnabledEl ? bgLinksEnabledEl.checked : false;
-    const bgLinks = [];
-    document.querySelectorAll("#bgLinksListContainer .bg-link-input").forEach(input => {
-      const val = input.value.trim();
-      if (val) bgLinks.push(val);
-    });
     
     if (countdown < 0 || countdown > 60) {
       showToast("Countdown must be between 0 and 60 seconds.", "warning");
@@ -1660,9 +1586,7 @@ document.addEventListener("submit", async (e) => {
         footerAdScript,
         footerAdEnabled,
         customAdScript,
-        customAdEnabled,
-        bgLinksEnabled,
-        bgLinks
+        customAdEnabled
       };
       
       const docRef = doc(db, "adSetups", id);
