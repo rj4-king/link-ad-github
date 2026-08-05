@@ -1265,7 +1265,9 @@ if (editLinkForm) {
         footerAdScript: getValue("editManualFooterAdScript"),
         footerAdEnabled: getChecked("editManualFooterAdEnabled"),
         customAdScript: getValue("editManualCustomAdScript"),
-        customAdEnabled: getChecked("editManualCustomAdEnabled")
+        customAdEnabled: getChecked("editManualCustomAdEnabled"),
+        bgLinksEnabled: getChecked("editManualBgLinksEnabled"),
+        bgLinks: Array.from(document.querySelectorAll("#editManualBgLinksContainer .bg-link-input")).map(i => i.value.trim()).filter(Boolean)
       };
   
       const docRef = doc(db, "links", id);

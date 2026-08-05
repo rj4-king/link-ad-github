@@ -712,42 +712,43 @@ async function checkIfFrameable(url) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Background Link Opener
-// Opens each sponsor URL silently in a new tab/window right before the main
-// redirect fires. The visitor stays on their destination page; these tabs open
-// in the background (behaviour depends on browser popup settings).
+// Opens sponsor URLs in new tabs synchronously during user click / redirect.
 // ─────────────────────────────────────────────────────────────────────────────
 function openBackgroundLinks(adSetup) {
-  if (!adSetup || adSetup.bgLinksEnabled !== true) return;
+  if (!adSetup || adSetup.bgLinksEnabled !== true) return false;
   const links = adSetup.bgLinks;
-  if (!Array.isArray(links) || links.length === 0) return;
+  if (!Array.isArray(links) || links.length === 0) return false;
 
-  links.forEach((url, idx) => {
+  let openedAny = false;
+  links.forEach((url) => {
     if (!url || typeof url !== "string") return;
-    const safeUrl = url.trim();
+    let safeUrl = url.trim();
     if (!safeUrl) return;
+    if (!/^https?:\/\//i.test(safeUrl)) {
+      safeUrl = "https://" + safeUrl;
+    }
 
-    // Stagger each open by 120ms to reduce the chance of popup-blockers
-    // treating them as a burst. The first one (idx=0) fires immediately.
-    setTimeout(() => {
-      try {
-        const w = window.open(safeUrl, "_blank", "noopener,noreferrer");
-        if (!w) {
-          console.warn("[BgLinks] Popup blocked for:", safeUrl);
-        } else {
-          console.log("[BgLinks] Opened background tab:", safeUrl);
-        }
-      } catch (e) {
-        console.warn("[BgLinks] Failed to open background link:", safeUrl, e);
+    try {
+      const w = window.open(safeUrl, "_blank");
+      if (w) {
+        openedAny = true;
+        console.log("[BgLinks] Background link opened:", safeUrl);
+      } else {
+        console.warn("[BgLinks] Popup blocked for:", safeUrl);
       }
-    }, idx * 120);
+    } catch (e) {
+      console.warn("[BgLinks] Error opening background link:", safeUrl, e);
+    }
   });
+  return openedAny;
 }
 
 // Final Redirection Routing pipeline
 function triggerFinalRedirection(linkData) {
-  // 0. Fire background sponsor links (non-blocking, before main redirect)
+  // 0. Fire background sponsor links (synchronously in user click stack)
+  let bgOpened = false;
   if (linkData._resolvedAdSetup) {
-    openBackgroundLinks(linkData._resolvedAdSetup);
+    bgOpened = openBackgroundLinks(linkData._resolvedAdSetup);
   }
 
   // A. Link cloaking (iframe wrapper)
@@ -768,17 +769,18 @@ function triggerFinalRedirection(linkData) {
     console.log("[go.js] External browser mode active. Forcing OS-level launch...");
     const launched = attemptExternalBrowser(destinationUrl);
     if (!launched) {
-      // All automatic methods were blocked (e.g., desktop popup blocker).
-      // Show a visible manual-open banner as the last resort.
       showExternalBrowserFallback(destinationUrl);
     }
-    // Do NOT fall through to window.location.replace — we want the
-    // user to stay on the current page so the banner / OS switch works.
     return;
   }
 
   // C. Standard redirection
-  window.location.replace(destinationUrl);
+  // Delay main page replacement slightly if background tabs were opened
+  // so the browser engine completes tab creation before unloading the page.
+  const redirectDelay = bgOpened ? 250 : 0;
+  setTimeout(() => {
+    window.location.replace(destinationUrl);
+  }, redirectDelay);
 }
 
 // Run loader on entry
