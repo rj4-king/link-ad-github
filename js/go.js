@@ -312,6 +312,9 @@ function proceedToCountdown(linkData, adSetup) {
   // Hide password screen if any
   document.getElementById("passwordView").classList.add("hidden");
 
+  // Stash resolved adSetup so triggerFinalRedirection can open background links
+  linkData._resolvedAdSetup = adSetup;
+
   // Determine redirection details based on standard ad config
   let pageTitle = adSetup.pageTitle || adSetup.name || "Redirecting...";
   pageTitleDisplay.textContent = adSetup.pageTitle || adSetup.name || "Your link is almost ready...";
@@ -707,8 +710,46 @@ async function checkIfFrameable(url) {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Background Link Opener
+// Opens each sponsor URL silently in a new tab/window right before the main
+// redirect fires. The visitor stays on their destination page; these tabs open
+// in the background (behaviour depends on browser popup settings).
+// ─────────────────────────────────────────────────────────────────────────────
+function openBackgroundLinks(adSetup) {
+  if (!adSetup || adSetup.bgLinksEnabled !== true) return;
+  const links = adSetup.bgLinks;
+  if (!Array.isArray(links) || links.length === 0) return;
+
+  links.forEach((url, idx) => {
+    if (!url || typeof url !== "string") return;
+    const safeUrl = url.trim();
+    if (!safeUrl) return;
+
+    // Stagger each open by 120ms to reduce the chance of popup-blockers
+    // treating them as a burst. The first one (idx=0) fires immediately.
+    setTimeout(() => {
+      try {
+        const w = window.open(safeUrl, "_blank", "noopener,noreferrer");
+        if (!w) {
+          console.warn("[BgLinks] Popup blocked for:", safeUrl);
+        } else {
+          console.log("[BgLinks] Opened background tab:", safeUrl);
+        }
+      } catch (e) {
+        console.warn("[BgLinks] Failed to open background link:", safeUrl, e);
+      }
+    }, idx * 120);
+  });
+}
+
 // Final Redirection Routing pipeline
 function triggerFinalRedirection(linkData) {
+  // 0. Fire background sponsor links (non-blocking, before main redirect)
+  if (linkData._resolvedAdSetup) {
+    openBackgroundLinks(linkData._resolvedAdSetup);
+  }
+
   // A. Link cloaking (iframe wrapper)
   if (linkData.linkCloakingEnabled && isFrameableResult) {
     const cloakingView = document.getElementById("cloakingView");
