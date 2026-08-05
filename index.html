@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
   <title>Admin Dashboard | AdLinker</title>
   <link rel="stylesheet" href="css/style.css?v=2.0.0">
 </head>
+
 <body>
   <!-- Ambient Gradient mesh -->
   <div class="bg-gradient-mesh"></div>
@@ -26,19 +28,25 @@
     <div class="glass-card auth-card">
       <div class="auth-header">
         <div class="auth-logo">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+          </svg>
         </div>
-        <h1 class="auth-title">Admin Access</h1>
+        <h1 class="auth-title">Admin Access v1 </h1>
         <p class="auth-subtitle">Sign in to manage your short links and ad spaces.</p>
       </div>
       <form id="loginForm" autocomplete="on">
         <div class="form-group">
           <label for="loginEmail" class="form-label">Email Address</label>
-          <input type="email" id="loginEmail" class="form-input" placeholder="admin@example.com" required autocomplete="email">
+          <input type="email" id="loginEmail" class="form-input" placeholder="admin@example.com" required
+            autocomplete="email">
         </div>
         <div class="form-group" style="margin-bottom: 1.75rem;">
           <label for="loginPassword" class="form-label">Password</label>
-          <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" required autocomplete="current-password">
+          <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" required
+            autocomplete="current-password">
         </div>
         <button type="submit" id="loginSubmitBtn" class="btn btn-primary btn-block">
           <span>Sign In</span>
@@ -49,40 +57,68 @@
 
   <!-- 2. Dashboard Screen Layout (Hidden until logged in) -->
   <div id="dashboardScreen" class="dashboard-layout" style="display: none;">
-    
+
     <!-- Sidebar Navigation -->
     <aside class="sidebar">
       <div class="sidebar-brand">
         <span class="brand-logo">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+          </svg>
         </span>
         <span class="brand-name">AdLinker</span>
       </div>
       <nav class="sidebar-menu">
         <label for="tab-dashboard-radio" class="sidebar-menu-item menu-dashboard">
           <span class="menu-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="9" rx="1" />
+              <rect x="14" y="3" width="7" height="5" rx="1" />
+              <rect x="14" y="12" width="7" height="9" rx="1" />
+              <rect x="3" y="16" width="7" height="5" rx="1" />
+            </svg>
           </span>
           <span class="menu-text">Dashboard</span>
         </label>
         <label for="tab-links-radio" class="sidebar-menu-item menu-links">
           <span class="menu-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+            </svg>
           </span>
           <span class="menu-text">Links</span>
         </label>
         <label for="tab-adsetup-radio" class="sidebar-menu-item menu-adsetup">
           <span class="menu-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="4" y1="21" x2="4" y2="14" />
+              <line x1="4" y1="10" x2="4" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12" y2="3" />
+              <line x1="20" y1="21" x2="20" y2="16" />
+              <line x1="20" y1="12" x2="20" y2="3" />
+              <line x1="1" y1="14" x2="7" y2="14" />
+              <line x1="9" y1="8" x2="15" y2="8" />
+              <line x1="17" y1="16" x2="23" y2="16" />
+            </svg>
           </span>
           <span class="menu-text">Ad Setup Manager</span>
         </label>
       </nav>
-      
+
       <!-- Sidebar footer: collapse trigger -->
       <div class="sidebar-footer">
         <label for="sidebarCollapseToggle" class="sidebar-collapse-btn" title="Collapse sidebar">
-          <svg class="collapse-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          <svg class="collapse-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
         </label>
       </div>
     </aside>
@@ -95,7 +131,7 @@
           <!-- Mobile Sidebar Toggle -->
           <label for="sidebarMobileToggle" class="sidebar-toggle-btn" aria-label="Toggle Sidebar">
             <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path d="M4 6h16M4 12h16M4 18h16"/>
+              <path d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </label>
           <div id="debugPageLabel" class="page-title-badge">PAGE: Admin Dashboard</div>
@@ -103,9 +139,10 @@
         <div class="topbar-right">
           <!-- Notification Bell -->
           <div class="notification-bell-container" id="notificationBellContainer">
-            <button id="notificationBellBtn" class="btn-icon-only bell-btn" aria-label="Notifications" title="View Notifications">
+            <button id="notificationBellBtn" class="btn-icon-only bell-btn" aria-label="Notifications"
+              title="View Notifications">
               <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/>
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0" />
               </svg>
               <span id="notificationBadge" class="notification-badge hidden">0</span>
             </button>
@@ -114,7 +151,7 @@
           <span id="userEmailDisplay" class="user-email">admin@example.com</span>
           <button id="logoutBtn" class="btn btn-secondary btn-sm" aria-label="Sign Out">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
             </svg>
             <span>Logout</span>
           </button>
@@ -123,25 +160,36 @@
 
       <!-- Main Workspace Scrollable Body -->
       <div class="workspace-body">
-        
+
         <!-- Tab 1: Dashboard statistics & Create link form -->
         <div class="tab-content dashboard-tab-content">
           <!-- Stats Cards Grid -->
           <div class="stats-grid">
-            
+
             <!-- Total Links Stat Card -->
             <div class="glass-card stat-card">
               <div class="stat-icon-wrapper">
                 <div class="stat-icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="9" rx="1" />
+                    <rect x="14" y="3" width="7" height="5" rx="1" />
+                    <rect x="14" y="12" width="7" height="9" rx="1" />
+                    <rect x="3" y="16" width="7" height="5" rx="1" />
+                  </svg>
                 </div>
                 <div class="stat-trend badge-active">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                    <polyline points="17 6 23 6 23 12" />
+                  </svg>
                   <span>12.4%</span>
                 </div>
               </div>
               <div class="stat-info">
-                <span id="statTotalLinks" class="stat-value"><span class="skeleton" style="width: 50px; height: 32px; display: inline-block;"></span></span>
+                <span id="statTotalLinks" class="stat-value"><span class="skeleton"
+                    style="width: 50px; height: 32px; display: inline-block;"></span></span>
                 <span class="stat-label">Total Links</span>
               </div>
             </div>
@@ -150,15 +198,25 @@
             <div class="glass-card stat-card">
               <div class="stat-icon-wrapper">
                 <div class="stat-icon" style="background: rgba(139, 92, 246, 0.1); color: var(--color-secondary);">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6"/><path d="m12 12 4 10 1.7-4.3L22 16Z"/></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 11V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6" />
+                    <path d="m12 12 4 10 1.7-4.3L22 16Z" />
+                  </svg>
                 </div>
-                <div class="stat-trend badge-active" style="background: rgba(139, 92, 246, 0.1); color: #c084fc; border-color: rgba(139, 92, 246, 0.2);">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                <div class="stat-trend badge-active"
+                  style="background: rgba(139, 92, 246, 0.1); color: #c084fc; border-color: rgba(139, 92, 246, 0.2);">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                    <polyline points="17 6 23 6 23 12" />
+                  </svg>
                   <span>28.1%</span>
                 </div>
               </div>
               <div class="stat-info">
-                <span id="statTotalClicks" class="stat-value"><span class="skeleton" style="width: 50px; height: 32px; display: inline-block;"></span></span>
+                <span id="statTotalClicks" class="stat-value"><span class="skeleton"
+                    style="width: 50px; height: 32px; display: inline-block;"></span></span>
                 <span class="stat-label">Total Clicks</span>
               </div>
             </div>
@@ -167,15 +225,20 @@
             <div class="glass-card stat-card">
               <div class="stat-icon-wrapper">
                 <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: var(--color-success);">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  </svg>
                 </div>
-                <div class="stat-trend badge-active" style="background: rgba(16, 185, 129, 0.1); color: #34d399; border-color: rgba(16, 185, 129, 0.2);">
+                <div class="stat-trend badge-active"
+                  style="background: rgba(16, 185, 129, 0.1); color: #34d399; border-color: rgba(16, 185, 129, 0.2);">
                   <div class="pulse-dot"></div>
                   <span>98.2%</span>
                 </div>
               </div>
               <div class="stat-info">
-                <span id="statActiveLinks" class="stat-value"><span class="skeleton" style="width: 50px; height: 32px; display: inline-block;"></span></span>
+                <span id="statActiveLinks" class="stat-value"><span class="skeleton"
+                    style="width: 50px; height: 32px; display: inline-block;"></span></span>
                 <span class="stat-label">Active Links</span>
               </div>
             </div>
@@ -186,7 +249,10 @@
           <div class="glass-card">
             <div class="panel-header">
               <h2 class="panel-title">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-primary);"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-primary);">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                </svg>
                 <span>Create Short Link</span>
               </h2>
             </div>
@@ -194,30 +260,46 @@
               <form id="createLinkForm">
                 <div class="form-group">
                   <label for="originalUrlInput" class="form-label">Paste Long URL</label>
-                  <input type="url" id="originalUrlInput" class="form-input" placeholder="https://example.com/very-long-destination-url-here" required autocomplete="url">
+                  <input type="url" id="originalUrlInput" class="form-input"
+                    placeholder="https://example.com/very-long-destination-url-here" required autocomplete="url">
                 </div>
                 <div class="form-group">
-                  <label for="linkTitleInput" class="form-label">Link Title <span class="text-muted">(Optional)</span></label>
+                  <label for="linkTitleInput" class="form-label">Link Title <span
+                      class="text-muted">(Optional)</span></label>
                   <div class="flex align-center gap-2">
-                    <input type="text" id="linkTitleInput" class="form-input" placeholder="e.g., Google Search Page" style="flex: 1;">
-                    <div id="titleLoadingSpinner" class="spinner hidden" style="width: 1.2rem; height: 1.2rem; flex-shrink: 0;"></div>
+                    <input type="text" id="linkTitleInput" class="form-input" placeholder="e.g., Google Search Page"
+                      style="flex: 1;">
+                    <div id="titleLoadingSpinner" class="spinner hidden"
+                      style="width: 1.2rem; height: 1.2rem; flex-shrink: 0;"></div>
                   </div>
-                  <small class="text-muted mt-1" style="display: block; font-size: 0.75rem;">Automatically fetched when pasting a URL. You can override it manually.</small>
+                  <small class="text-muted mt-1" style="display: block; font-size: 0.75rem;">Automatically fetched when
+                    pasting a URL. You can override it manually.</small>
                 </div>
                 <div class="form-group">
-                  <label for="customCodeInput" class="form-label">Custom Short Code <span class="text-muted">(Optional)</span></label>
+                  <label for="customCodeInput" class="form-label">Custom Short Code <span
+                      class="text-muted">(Optional)</span></label>
                   <div class="flex align-center gap-2">
-                    <input type="text" id="customCodeInput" class="form-input" placeholder="e.g., promo123" pattern="^[a-zA-Z0-9-_]+$" title="Only letters, numbers, dashes and underscores.">
-                    <button type="button" id="generateCodeBtn" class="btn btn-secondary" style="white-space: nowrap;" title="Generate random code">Auto Gen</button>
+                    <input type="text" id="customCodeInput" class="form-input" placeholder="e.g., promo123"
+                      pattern="^[a-zA-Z0-9-_]+$" title="Only letters, numbers, dashes and underscores.">
+                    <button type="button" id="generateCodeBtn" class="btn btn-secondary" style="white-space: nowrap;"
+                      title="Generate random code">Auto Gen</button>
                   </div>
-                  <small class="text-muted mt-1" style="display: block; font-size: 0.75rem;">Leave blank to generate a random 6-character code.</small>
+                  <small class="text-muted mt-1" style="display: block; font-size: 0.75rem;">Leave blank to generate a
+                    random 6-character code.</small>
                 </div>
-                
+
                 <!-- Advanced Options Toggle -->
                 <div class="form-group" style="margin-top: 1.5rem; margin-bottom: 1rem;">
-                  <button type="button" id="toggleAdvancedOptionsBtn" class="btn btn-secondary w-full flex align-center justify-between" style="padding: 0.65rem 1rem; border-color: rgba(255,255,255,0.06); font-size: 0.9rem;">
+                  <button type="button" id="toggleAdvancedOptionsBtn"
+                    class="btn btn-secondary w-full flex align-center justify-between"
+                    style="padding: 0.65rem 1rem; border-color: rgba(255,255,255,0.06); font-size: 0.9rem;">
                     <span class="flex align-center gap-2">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3" />
+                        <path
+                          d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                      </svg>
                       <span>Advanced Options</span>
                     </span>
                     <span id="advancedOptionsChevron" style="transition: transform 0.3s;">▼</span>
@@ -225,15 +307,21 @@
                 </div>
 
                 <!-- Collapsible Advanced Options Container -->
-                <div id="advancedOptionsContainer" class="hidden" style="border-top: 1px dashed var(--border-glass); padding-top: 1.5rem; margin-top: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;">
-                  
+                <div id="advancedOptionsContainer" class="hidden"
+                  style="border-top: 1px dashed var(--border-glass); padding-top: 1.5rem; margin-top: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;">
+
                   <!-- Ad Setup Settings Sub-Card -->
                   <div class="glass-card settings-sub-card">
-                    <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                    <h3
+                      style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                        <line x1="4" y1="22" x2="4" y2="15" />
+                      </svg>
                       <span>Ad Setup Configuration</span>
                     </h3>
-                    
+
                     <div class="form-group">
                       <label for="linkAdSetupOption" class="form-label">Ad Setup Option</label>
                       <select id="linkAdSetupOption" class="form-input" style="background: rgba(0, 0, 0, 0.3);">
@@ -251,13 +339,15 @@
                     </div>
 
                     <!-- Manual Ad Custom Overrides -->
-                    <div id="linkAdSetupManualGroup" class="hidden" style="border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 1rem; margin-top: 1rem; display: flex; flex-direction: column; gap: 1rem;">
+                    <div id="linkAdSetupManualGroup" class="hidden"
+                      style="border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 1rem; margin-top: 1rem; display: flex; flex-direction: column; gap: 1rem;">
                       <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div class="form-group" style="margin-bottom: 0;">
                           <label for="manualCountdown" class="form-label">Timer (Seconds)</label>
                           <input type="number" id="manualCountdown" class="form-input" min="0" max="60" value="10">
                         </div>
-                        <div class="form-group" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: center;">
+                        <div class="form-group"
+                          style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: center;">
                           <label class="form-label" style="margin-bottom: 0.5rem;">Auto Redirect</label>
                           <label class="switch">
                             <input type="checkbox" id="manualAutoRedirect" checked>
@@ -267,50 +357,63 @@
                       </div>
                       <div class="form-group" style="margin-bottom: 0;">
                         <label for="manualButtonText" class="form-label">Continue Button Text</label>
-                        <input type="text" id="manualButtonText" class="form-input" placeholder="Click to Continue" value="Click to Continue">
+                        <input type="text" id="manualButtonText" class="form-input" placeholder="Click to Continue"
+                          value="Click to Continue">
                       </div>
-                      
+
                       <!-- Manual Ad Scripts Slots -->
                       <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.5rem;">
                         <div class="form-group" style="margin-bottom: 0;">
                           <div class="flex align-center justify-between mb-1">
-                            <label for="manualHeaderAdScript" class="form-label" style="margin-bottom:0;">Header Ad Script</label>
+                            <label for="manualHeaderAdScript" class="form-label" style="margin-bottom:0;">Header Ad
+                              Script</label>
                             <label class="switch" style="transform: scale(0.85);">
                               <input type="checkbox" id="manualHeaderAdEnabled">
                               <span class="slider"></span>
                             </label>
                           </div>
-                          <textarea id="manualHeaderAdScript" class="form-input" rows="2" style="font-family: monospace; font-size: 0.75rem;" placeholder="<!-- Header script -->"></textarea>
+                          <textarea id="manualHeaderAdScript" class="form-input" rows="2"
+                            style="font-family: monospace; font-size: 0.75rem;"
+                            placeholder="<!-- Header script -->"></textarea>
                         </div>
                         <div class="form-group" style="margin-bottom: 0;">
                           <div class="flex align-center justify-between mb-1">
-                            <label for="manualBodyAdScript" class="form-label" style="margin-bottom:0;">Body Ad Script</label>
+                            <label for="manualBodyAdScript" class="form-label" style="margin-bottom:0;">Body Ad
+                              Script</label>
                             <label class="switch" style="transform: scale(0.85);">
                               <input type="checkbox" id="manualBodyAdEnabled">
                               <span class="slider"></span>
                             </label>
                           </div>
-                          <textarea id="manualBodyAdScript" class="form-input" rows="2" style="font-family: monospace; font-size: 0.75rem;" placeholder="<!-- Body script -->"></textarea>
+                          <textarea id="manualBodyAdScript" class="form-input" rows="2"
+                            style="font-family: monospace; font-size: 0.75rem;"
+                            placeholder="<!-- Body script -->"></textarea>
                         </div>
                         <div class="form-group" style="margin-bottom: 0;">
                           <div class="flex align-center justify-between mb-1">
-                            <label for="manualFooterAdScript" class="form-label" style="margin-bottom:0;">Footer Ad Script</label>
+                            <label for="manualFooterAdScript" class="form-label" style="margin-bottom:0;">Footer Ad
+                              Script</label>
                             <label class="switch" style="transform: scale(0.85);">
                               <input type="checkbox" id="manualFooterAdEnabled">
                               <span class="slider"></span>
                             </label>
                           </div>
-                          <textarea id="manualFooterAdScript" class="form-input" rows="2" style="font-family: monospace; font-size: 0.75rem;" placeholder="<!-- Footer script -->"></textarea>
+                          <textarea id="manualFooterAdScript" class="form-input" rows="2"
+                            style="font-family: monospace; font-size: 0.75rem;"
+                            placeholder="<!-- Footer script -->"></textarea>
                         </div>
                         <div class="form-group" style="margin-bottom: 0;">
                           <div class="flex align-center justify-between mb-1">
-                            <label for="manualCustomAdScript" class="form-label" style="margin-bottom:0;">Custom/Extra Ad Script</label>
+                            <label for="manualCustomAdScript" class="form-label" style="margin-bottom:0;">Custom/Extra
+                              Ad Script</label>
                             <label class="switch" style="transform: scale(0.85);">
                               <input type="checkbox" id="manualCustomAdEnabled">
                               <span class="slider"></span>
                             </label>
                           </div>
-                          <textarea id="manualCustomAdScript" class="form-input" rows="2" style="font-family: monospace; font-size: 0.75rem;" placeholder="<!-- Custom script -->"></textarea>
+                          <textarea id="manualCustomAdScript" class="form-input" rows="2"
+                            style="font-family: monospace; font-size: 0.75rem;"
+                            placeholder="<!-- Custom script -->"></textarea>
                         </div>
                       </div>
                     </div>
@@ -320,8 +423,11 @@
                   <div class="glass-card settings-sub-card">
                     <div class="flex align-center justify-between">
                       <div>
-                        <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">⏱️ Ads & Countdown</h3>
-                        <p class="text-muted" style="font-size: 0.75rem;">Enable/Disable visitor landing & countdown page.</p>
+                        <h3
+                          style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">
+                          ⏱️ Ads & Countdown</h3>
+                        <p class="text-muted" style="font-size: 0.75rem;">Enable/Disable visitor landing & countdown
+                          page.</p>
                       </div>
                       <label class="switch">
                         <input type="checkbox" id="linkAdsCountdownEnabled" checked>
@@ -334,23 +440,30 @@
                   <div class="glass-card settings-sub-card">
                     <div class="flex align-center justify-between mb-2">
                       <div>
-                        <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">🎭 Link Cloaking</h3>
-                        <p class="text-muted" style="font-size: 0.75rem;">Mask destination URL inside an iframe wrapper.</p>
+                        <h3
+                          style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">
+                          🎭 Link Cloaking</h3>
+                        <p class="text-muted" style="font-size: 0.75rem;">Mask destination URL inside an iframe wrapper.
+                        </p>
                       </div>
                       <label class="switch">
                         <input type="checkbox" id="linkCloakingEnabled">
                         <span class="slider"></span>
                       </label>
                     </div>
-                    <small class="text-warning" style="font-size: 0.725rem; display: block;">⚠️ Some websites may block iframe embedding (e.g., security headers).</small>
+                    <small class="text-warning" style="font-size: 0.725rem; display: block;">⚠️ Some websites may block
+                      iframe embedding (e.g., security headers).</small>
                   </div>
 
                   <!-- External Browser Sub-Card -->
                   <div class="glass-card settings-sub-card">
                     <div class="flex align-center justify-between">
                       <div>
-                        <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">🌐 Open External Browser</h3>
-                        <p class="text-muted" style="font-size: 0.75rem;">Escape in-app browsers into device default browser.</p>
+                        <h3
+                          style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">
+                          🌐 Open External Browser</h3>
+                        <p class="text-muted" style="font-size: 0.75rem;">Escape in-app browsers into device default
+                          browser.</p>
                       </div>
                       <label class="switch">
                         <input type="checkbox" id="linkExternalBrowserEnabled">
@@ -360,10 +473,13 @@
                   </div>
 
                   <!-- Password Protection Sub-Card -->
-                  <div class="glass-card settings-sub-card" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                  <div class="glass-card settings-sub-card"
+                    style="display: flex; flex-direction: column; gap: 0.75rem;">
                     <div class="flex align-center justify-between">
                       <div>
-                        <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">🔒 Password Protection</h3>
+                        <h3
+                          style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">
+                          🔒 Password Protection</h3>
                         <p class="text-muted" style="font-size: 0.75rem;">Require a password to access destination.</p>
                       </div>
                       <label class="switch">
@@ -371,85 +487,116 @@
                         <span class="slider"></span>
                       </label>
                     </div>
-                    <div id="linkPasswordFields" class="hidden" style="border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 0.75rem;">
+                    <div id="linkPasswordFields" class="hidden"
+                      style="border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 0.75rem;">
                       <div class="form-group" style="margin-bottom: 0;">
-                        <label for="linkPasswordValue" class="form-label" style="font-size: 0.8rem;">Set Password</label>
+                        <label for="linkPasswordValue" class="form-label" style="font-size: 0.8rem;">Set
+                          Password</label>
                         <input type="text" id="linkPasswordValue" class="form-input" placeholder="Enter password key">
                       </div>
                     </div>
                   </div>
 
                   <!-- OG Settings Sub-Card -->
-                  <div class="glass-card settings-sub-card" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                  <div class="glass-card settings-sub-card"
+                    style="display: flex; flex-direction: column; gap: 0.75rem;">
                     <div>
-                      <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">🏷️ Open Graph Settings</h3>
-                      <p class="text-muted" style="font-size: 0.75rem;">Custom title & tags parsed during social sharing previews.</p>
+                      <h3
+                        style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">
+                        🏷️ Open Graph Settings</h3>
+                      <p class="text-muted" style="font-size: 0.75rem;">Custom title & tags parsed during social sharing
+                        previews.</p>
                     </div>
-                    <div style="display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 0.75rem;">
+                    <div
+                      style="display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 0.75rem;">
                       <div class="form-group" style="margin-bottom: 0;">
                         <label for="linkOgTitle" class="form-label" style="font-size: 0.8rem;">OG Custom Title</label>
                         <input type="text" id="linkOgTitle" class="form-input" placeholder="e.g., Special Offer Title">
                       </div>
                       <div class="form-group" style="margin-bottom: 0;">
-                        <label for="linkOgDescription" class="form-label" style="font-size: 0.8rem;">OG Custom Description</label>
-                        <input type="text" id="linkOgDescription" class="form-input" placeholder="e.g., Short promo description text">
+                        <label for="linkOgDescription" class="form-label" style="font-size: 0.8rem;">OG Custom
+                          Description</label>
+                        <input type="text" id="linkOgDescription" class="form-input"
+                          placeholder="e.g., Short promo description text">
                       </div>
                       <div class="form-group" style="margin-bottom: 0;">
-                        <label for="linkOgImageUrl" class="form-label" style="font-size: 0.8rem;">OG Custom Image URL</label>
-                        <input type="url" id="linkOgImageUrl" class="form-input" placeholder="https://example.com/social-preview.png">
+                        <label for="linkOgImageUrl" class="form-label" style="font-size: 0.8rem;">OG Custom Image
+                          URL</label>
+                        <input type="url" id="linkOgImageUrl" class="form-input"
+                          placeholder="https://example.com/social-preview.png">
                       </div>
                     </div>
                   </div>
 
                   <!-- Device Redirect Sub-Card -->
-                  <div class="glass-card settings-sub-card" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                  <div class="glass-card settings-sub-card"
+                    style="display: flex; flex-direction: column; gap: 0.75rem;">
                     <div class="flex align-center justify-between">
                       <div>
-                        <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">📱 Device Redirection</h3>
-                        <p class="text-muted" style="font-size: 0.75rem;">Route users based on their device operating system.</p>
+                        <h3
+                          style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">
+                          📱 Device Redirection</h3>
+                        <p class="text-muted" style="font-size: 0.75rem;">Route users based on their device operating
+                          system.</p>
                       </div>
                       <label class="switch">
                         <input type="checkbox" id="linkDeviceRedirectEnabled">
                         <span class="slider"></span>
                       </label>
                     </div>
-                    <div id="linkDeviceFields" class="hidden" style="display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 0.75rem;">
+                    <div id="linkDeviceFields" class="hidden"
+                      style="display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 0.75rem;">
                       <div class="form-group" style="margin-bottom: 0;">
-                        <label for="linkDesktopUrl" class="form-label" style="font-size: 0.8rem;">Desktop Redirect URL</label>
-                        <input type="url" id="linkDesktopUrl" class="form-input" placeholder="https://desktop.domain.com">
+                        <label for="linkDesktopUrl" class="form-label" style="font-size: 0.8rem;">Desktop Redirect
+                          URL</label>
+                        <input type="url" id="linkDesktopUrl" class="form-input"
+                          placeholder="https://desktop.domain.com">
                       </div>
                       <div class="form-group" style="margin-bottom: 0;">
-                        <label for="linkAndroidUrl" class="form-label" style="font-size: 0.8rem;">Android Redirect (Play Store)</label>
-                        <input type="url" id="linkAndroidUrl" class="form-input" placeholder="https://play.google.com/store/...">
+                        <label for="linkAndroidUrl" class="form-label" style="font-size: 0.8rem;">Android Redirect (Play
+                          Store)</label>
+                        <input type="url" id="linkAndroidUrl" class="form-input"
+                          placeholder="https://play.google.com/store/...">
                       </div>
                       <div class="form-group" style="margin-bottom: 0;">
-                        <label for="linkIosUrl" class="form-label" style="font-size: 0.8rem;">iPhone/iPad Redirect (App Store)</label>
-                        <input type="url" id="linkIosUrl" class="form-input" placeholder="https://apps.apple.com/app/...">
+                        <label for="linkIosUrl" class="form-label" style="font-size: 0.8rem;">iPhone/iPad Redirect (App
+                          Store)</label>
+                        <input type="url" id="linkIosUrl" class="form-input"
+                          placeholder="https://apps.apple.com/app/...">
                       </div>
                     </div>
                   </div>
 
                   <!-- Geo Redirect Sub-Card -->
-                  <div class="glass-card settings-sub-card" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                  <div class="glass-card settings-sub-card"
+                    style="display: flex; flex-direction: column; gap: 0.75rem;">
                     <div class="flex align-center justify-between">
                       <div>
-                        <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">🌍 Geo-Targeting Redirect</h3>
-                        <p class="text-muted" style="font-size: 0.75rem;">Redirect visitors based on their current country.</p>
+                        <h3
+                          style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">
+                          🌍 Geo-Targeting Redirect</h3>
+                        <p class="text-muted" style="font-size: 0.75rem;">Redirect visitors based on their current
+                          country.</p>
                       </div>
                       <label class="switch">
                         <input type="checkbox" id="linkGeoRedirectEnabled">
                         <span class="slider"></span>
                       </label>
                     </div>
-                    <div id="linkGeoFields" class="hidden" style="display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 0.75rem;">
+                    <div id="linkGeoFields" class="hidden"
+                      style="display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 0.75rem;">
                       <label class="form-label" style="font-size: 0.8rem;">Country Routing Rules</label>
-                      <div id="geoRulesListContainer" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.5rem;">
+                      <div id="geoRulesListContainer"
+                        style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.5rem;">
                         <!-- Geo rows injected by JS -->
                       </div>
-                      <button type="button" id="addGeoRuleBtn" class="btn btn-secondary btn-sm" style="font-size:0.75rem;">+ Add Geo Rule</button>
+                      <button type="button" id="addGeoRuleBtn" class="btn btn-secondary btn-sm"
+                        style="font-size:0.75rem;">+ Add Geo Rule</button>
                       <div class="form-group" style="margin-bottom: 0; margin-top: 0.5rem;">
-                        <label for="linkGeoDefaultUrl" class="form-label" style="font-size: 0.8rem;">Default Fallback URL</label>
-                        <input type="url" id="linkGeoDefaultUrl" class="form-input" placeholder="https://fallback.domain.com">
+                        <label for="linkGeoDefaultUrl" class="form-label" style="font-size: 0.8rem;">Default Fallback
+                          URL</label>
+                        <input type="url" id="linkGeoDefaultUrl" class="form-input"
+                          placeholder="https://fallback.domain.com">
                       </div>
                     </div>
                   </div>
@@ -462,19 +609,29 @@
               </form>
 
               <!-- Shortened URL Output Display (hidden by default) -->
-              <div id="linkResultBox" class="glass-card hidden mt-4" style="background: rgba(59, 130, 246, 0.05); border-color: rgba(59, 130, 246, 0.2); padding: 1.25rem;">
+              <div id="linkResultBox" class="glass-card hidden mt-4"
+                style="background: rgba(59, 130, 246, 0.05); border-color: rgba(59, 130, 246, 0.2); padding: 1.25rem;">
                 <span class="form-label text-success">Link Generated Successfully!</span>
-                
+
                 <!-- Favicon + Title Live Preview -->
-                <div id="resultLinkPreview" class="flex align-center gap-2 mt-2" style="margin-bottom: 0.75rem; border-bottom: 1px dashed rgba(59, 130, 246, 0.15); padding-bottom: 0.75rem;">
-                  <img id="resultFavicon" src="" style="width: 16px; height: 16px; border-radius: 2px; flex-shrink: 0;" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%239ca3af%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><circle cx=%2212%22 cy=%2212%22 r=%2210%22></circle><line x1=%222%22 y1=%2212%22 x2=%2222%22 y2=%2212%22></line><path d=%22M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z%22></path></svg>';">
-                  <span id="resultTitle" style="font-size: 0.9rem; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;">Untitled Link</span>
+                <div id="resultLinkPreview" class="flex align-center gap-2 mt-2"
+                  style="margin-bottom: 0.75rem; border-bottom: 1px dashed rgba(59, 130, 246, 0.15); padding-bottom: 0.75rem;">
+                  <img id="resultFavicon" src="" style="width: 16px; height: 16px; border-radius: 2px; flex-shrink: 0;"
+                    onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%239ca3af%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><circle cx=%2212%22 cy=%2212%22 r=%2210%22></circle><line x1=%222%22 y1=%2212%22 x2=%2222%22 y2=%2212%22></line><path d=%22M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z%22></path></svg>';">
+                  <span id="resultTitle"
+                    style="font-size: 0.9rem; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;">Untitled
+                    Link</span>
                 </div>
 
                 <div class="flex align-center gap-2 mt-2">
-                  <input type="text" id="resultShortUrl" class="form-input" readonly style="font-family: monospace; font-weight: 600; color: var(--color-accent);">
-                  <button type="button" id="copyResultBtn" class="btn btn-primary" style="padding: 0.75rem 1rem;" title="Copy to clipboard">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  <input type="text" id="resultShortUrl" class="form-input" readonly
+                    style="font-family: monospace; font-weight: 600; color: var(--color-accent);">
+                  <button type="button" id="copyResultBtn" class="btn btn-primary" style="padding: 0.75rem 1rem;"
+                    title="Copy to clipboard">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                    </svg>
                   </button>
                 </div>
               </div>
@@ -487,17 +644,22 @@
           <div class="glass-card">
             <div class="panel-header">
               <h2 class="panel-title">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-primary);"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-primary);">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                </svg>
                 <span>Shortened URLs</span>
               </h2>
             </div>
             <div class="panel-body" style="padding: 1.25rem;">
-              
+
               <!-- Actions Bar -->
               <div class="actions-bar">
                 <div class="search-wrapper">
                   <span class="search-icon">🔍</span>
-                  <input type="text" id="searchInput" class="form-input search-input" placeholder="Search by code or original URL...">
+                  <input type="text" id="searchInput" class="form-input search-input"
+                    placeholder="Search by code or original URL...">
                 </div>
               </div>
 
@@ -549,7 +711,8 @@
           <input type="hidden" id="editLinkId">
           <div class="form-group">
             <label class="form-label">Short Code</label>
-            <input type="text" id="editLinkCode" class="form-input" readonly style="background: rgba(255,255,255,0.02); color: var(--text-muted); font-family: monospace;">
+            <input type="text" id="editLinkCode" class="form-input" readonly
+              style="background: rgba(255,255,255,0.02); color: var(--text-muted); font-family: monospace;">
           </div>
           <div class="form-group">
             <label for="editLinkTitle" class="form-label">Link Title <span class="text-muted">(Optional)</span></label>
@@ -562,21 +725,25 @@
 
           <!-- Advanced Options Toggle for Edit -->
           <div class="form-group" style="margin-top: 1rem; margin-bottom: 1rem;">
-            <button type="button" id="toggleEditAdvancedOptionsBtn" class="btn btn-secondary w-full flex align-center justify-between" style="padding: 0.65rem 1rem; border-color: rgba(255,255,255,0.06); font-size: 0.9rem;">
+            <button type="button" id="toggleEditAdvancedOptionsBtn"
+              class="btn btn-secondary w-full flex align-center justify-between"
+              style="padding: 0.65rem 1rem; border-color: rgba(255,255,255,0.06); font-size: 0.9rem;">
               <span class="flex align-center gap-2">⚙️ <span>Advanced Options</span></span>
               <span id="editAdvancedOptionsChevron" style="transition: transform 0.3s;">▼</span>
             </button>
           </div>
 
           <!-- Collapsible Advanced Options Container for Edit -->
-          <div id="editAdvancedOptionsContainer" class="hidden" style="border-top: 1px dashed var(--border-glass); padding-top: 1.5rem; margin-top: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; max-height: 400px; overflow-y: auto; padding-right: 0.5rem; margin-bottom: 1.5rem;">
-            
+          <div id="editAdvancedOptionsContainer" class="hidden"
+            style="border-top: 1px dashed var(--border-glass); padding-top: 1.5rem; margin-top: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; max-height: 400px; overflow-y: auto; padding-right: 0.5rem; margin-bottom: 1.5rem;">
+
             <!-- Ad Setup Settings Sub-Card -->
             <div class="glass-card settings-sub-card">
-              <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+              <h3
+                style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
                 <span>📢 Ad Setup Configuration</span>
               </h3>
-              
+
               <div class="form-group">
                 <label for="editLinkAdSetupOption" class="form-label">Ad Setup Option</label>
                 <select id="editLinkAdSetupOption" class="form-input" style="background: rgba(0, 0, 0, 0.3);">
@@ -594,13 +761,15 @@
               </div>
 
               <!-- Manual Ad Custom Overrides -->
-              <div id="editLinkAdSetupManualGroup" class="hidden" style="border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 1rem; margin-top: 1rem; display: flex; flex-direction: column; gap: 1rem;">
+              <div id="editLinkAdSetupManualGroup" class="hidden"
+                style="border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 1rem; margin-top: 1rem; display: flex; flex-direction: column; gap: 1rem;">
                 <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                   <div class="form-group" style="margin-bottom: 0;">
                     <label for="editManualCountdown" class="form-label">Timer (Seconds)</label>
                     <input type="number" id="editManualCountdown" class="form-input" min="0" max="60" value="10">
                   </div>
-                  <div class="form-group" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: center;">
+                  <div class="form-group"
+                    style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: center;">
                     <label class="form-label" style="margin-bottom: 0.5rem;">Auto Redirect</label>
                     <label class="switch">
                       <input type="checkbox" id="editManualAutoRedirect" checked>
@@ -610,50 +779,62 @@
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
                   <label for="editManualButtonText" class="form-label">Continue Button Text</label>
-                  <input type="text" id="editManualButtonText" class="form-input" placeholder="Click to Continue" value="Click to Continue">
+                  <input type="text" id="editManualButtonText" class="form-input" placeholder="Click to Continue"
+                    value="Click to Continue">
                 </div>
-                
+
                 <!-- Manual Ad Scripts Slots -->
                 <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.5rem;">
                   <div class="form-group" style="margin-bottom: 0;">
                     <div class="flex align-center justify-between mb-1">
-                      <label for="editManualHeaderAdScript" class="form-label" style="margin-bottom:0;">Header Ad Script</label>
+                      <label for="editManualHeaderAdScript" class="form-label" style="margin-bottom:0;">Header Ad
+                        Script</label>
                       <label class="switch" style="transform: scale(0.85);">
                         <input type="checkbox" id="editManualHeaderAdEnabled">
                         <span class="slider"></span>
                       </label>
                     </div>
-                    <textarea id="editManualHeaderAdScript" class="form-input" rows="2" style="font-family: monospace; font-size: 0.75rem;" placeholder="<!-- Header script -->"></textarea>
+                    <textarea id="editManualHeaderAdScript" class="form-input" rows="2"
+                      style="font-family: monospace; font-size: 0.75rem;"
+                      placeholder="<!-- Header script -->"></textarea>
                   </div>
                   <div class="form-group" style="margin-bottom: 0;">
                     <div class="flex align-center justify-between mb-1">
-                      <label for="editManualBodyAdScript" class="form-label" style="margin-bottom:0;">Body Ad Script</label>
+                      <label for="editManualBodyAdScript" class="form-label" style="margin-bottom:0;">Body Ad
+                        Script</label>
                       <label class="switch" style="transform: scale(0.85);">
                         <input type="checkbox" id="editManualBodyAdEnabled">
                         <span class="slider"></span>
                       </label>
                     </div>
-                    <textarea id="editManualBodyAdScript" class="form-input" rows="2" style="font-family: monospace; font-size: 0.75rem;" placeholder="<!-- Body script -->"></textarea>
+                    <textarea id="editManualBodyAdScript" class="form-input" rows="2"
+                      style="font-family: monospace; font-size: 0.75rem;" placeholder="<!-- Body script -->"></textarea>
                   </div>
                   <div class="form-group" style="margin-bottom: 0;">
                     <div class="flex align-center justify-between mb-1">
-                      <label for="editManualFooterAdScript" class="form-label" style="margin-bottom:0;">Footer Ad Script</label>
+                      <label for="editManualFooterAdScript" class="form-label" style="margin-bottom:0;">Footer Ad
+                        Script</label>
                       <label class="switch" style="transform: scale(0.85);">
                         <input type="checkbox" id="editManualFooterAdEnabled">
                         <span class="slider"></span>
                       </label>
                     </div>
-                    <textarea id="editManualFooterAdScript" class="form-input" rows="2" style="font-family: monospace; font-size: 0.75rem;" placeholder="<!-- Footer script -->"></textarea>
+                    <textarea id="editManualFooterAdScript" class="form-input" rows="2"
+                      style="font-family: monospace; font-size: 0.75rem;"
+                      placeholder="<!-- Footer script -->"></textarea>
                   </div>
                   <div class="form-group" style="margin-bottom: 0;">
                     <div class="flex align-center justify-between mb-1">
-                      <label for="editManualCustomAdScript" class="form-label" style="margin-bottom:0;">Custom/Extra Ad Script</label>
+                      <label for="editManualCustomAdScript" class="form-label" style="margin-bottom:0;">Custom/Extra Ad
+                        Script</label>
                       <label class="switch" style="transform: scale(0.85);">
                         <input type="checkbox" id="editManualCustomAdEnabled">
                         <span class="slider"></span>
                       </label>
                     </div>
-                    <textarea id="editManualCustomAdScript" class="form-input" rows="2" style="font-family: monospace; font-size: 0.75rem;" placeholder="<!-- Custom script -->"></textarea>
+                    <textarea id="editManualCustomAdScript" class="form-input" rows="2"
+                      style="font-family: monospace; font-size: 0.75rem;"
+                      placeholder="<!-- Custom script -->"></textarea>
                   </div>
                 </div>
               </div>
@@ -663,7 +844,8 @@
             <div class="glass-card settings-sub-card">
               <div class="flex align-center justify-between">
                 <div>
-                  <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">⏱️ Ads & Countdown</h3>
+                  <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">
+                    ⏱️ Ads & Countdown</h3>
                   <p class="text-muted" style="font-size: 0.75rem;">Enable/Disable visitor landing & countdown page.</p>
                 </div>
                 <label class="switch">
@@ -677,7 +859,8 @@
             <div class="glass-card settings-sub-card">
               <div class="flex align-center justify-between mb-2">
                 <div>
-                  <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">🎭 Link Cloaking</h3>
+                  <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">
+                    🎭 Link Cloaking</h3>
                   <p class="text-muted" style="font-size: 0.75rem;">Mask destination URL inside an iframe wrapper.</p>
                 </div>
                 <label class="switch">
@@ -685,15 +868,18 @@
                   <span class="slider"></span>
                 </label>
               </div>
-              <small class="text-warning" style="font-size: 0.725rem; display: block;">⚠️ Some websites may block iframe embedding (e.g., security headers).</small>
+              <small class="text-warning" style="font-size: 0.725rem; display: block;">⚠️ Some websites may block iframe
+                embedding (e.g., security headers).</small>
             </div>
 
             <!-- External Browser Sub-Card -->
             <div class="glass-card settings-sub-card">
               <div class="flex align-center justify-between">
                 <div>
-                  <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">🌐 Open External Browser</h3>
-                  <p class="text-muted" style="font-size: 0.75rem;">Escape in-app browsers into device default browser.</p>
+                  <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">
+                    🌐 Open External Browser</h3>
+                  <p class="text-muted" style="font-size: 0.75rem;">Escape in-app browsers into device default browser.
+                  </p>
                 </div>
                 <label class="switch">
                   <input type="checkbox" id="editLinkExternalBrowserEnabled">
@@ -706,7 +892,8 @@
             <div class="glass-card settings-sub-card" style="display: flex; flex-direction: column; gap: 0.75rem;">
               <div class="flex align-center justify-between">
                 <div>
-                  <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">🔒 Password Protection</h3>
+                  <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">
+                    🔒 Password Protection</h3>
                   <p class="text-muted" style="font-size: 0.75rem;">Require a password to access destination.</p>
                 </div>
                 <label class="switch">
@@ -714,7 +901,8 @@
                   <span class="slider"></span>
                 </label>
               </div>
-              <div id="editLinkPasswordFields" class="hidden" style="border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 0.75rem;">
+              <div id="editLinkPasswordFields" class="hidden"
+                style="border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 0.75rem;">
                 <div class="form-group" style="margin-bottom: 0;">
                   <label for="editLinkPasswordValue" class="form-label" style="font-size: 0.8rem;">Set Password</label>
                   <input type="text" id="editLinkPasswordValue" class="form-input" placeholder="Enter password key">
@@ -725,21 +913,28 @@
             <!-- OG Settings Sub-Card -->
             <div class="glass-card settings-sub-card" style="display: flex; flex-direction: column; gap: 0.75rem;">
               <div>
-                <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">🏷️ Open Graph Settings</h3>
-                <p class="text-muted" style="font-size: 0.75rem;">Custom title & tags parsed during social sharing previews.</p>
+                <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">
+                  🏷️ Open Graph Settings</h3>
+                <p class="text-muted" style="font-size: 0.75rem;">Custom title & tags parsed during social sharing
+                  previews.</p>
               </div>
-              <div style="display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 0.75rem;">
+              <div
+                style="display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 0.75rem;">
                 <div class="form-group" style="margin-bottom: 0;">
                   <label for="editLinkOgTitle" class="form-label" style="font-size: 0.8rem;">OG Custom Title</label>
                   <input type="text" id="editLinkOgTitle" class="form-input" placeholder="e.g., Special Offer Title">
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
-                  <label for="editLinkOgDescription" class="form-label" style="font-size: 0.8rem;">OG Custom Description</label>
-                  <input type="text" id="editLinkOgDescription" class="form-input" placeholder="e.g., Short promo description text">
+                  <label for="editLinkOgDescription" class="form-label" style="font-size: 0.8rem;">OG Custom
+                    Description</label>
+                  <input type="text" id="editLinkOgDescription" class="form-input"
+                    placeholder="e.g., Short promo description text">
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
-                  <label for="editLinkOgImageUrl" class="form-label" style="font-size: 0.8rem;">OG Custom Image URL</label>
-                  <input type="url" id="editLinkOgImageUrl" class="form-input" placeholder="https://example.com/social-preview.png">
+                  <label for="editLinkOgImageUrl" class="form-label" style="font-size: 0.8rem;">OG Custom Image
+                    URL</label>
+                  <input type="url" id="editLinkOgImageUrl" class="form-input"
+                    placeholder="https://example.com/social-preview.png">
                 </div>
               </div>
             </div>
@@ -748,25 +943,32 @@
             <div class="glass-card settings-sub-card" style="display: flex; flex-direction: column; gap: 0.75rem;">
               <div class="flex align-center justify-between">
                 <div>
-                  <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">📱 Device Redirection</h3>
-                  <p class="text-muted" style="font-size: 0.75rem;">Route users based on their device operating system.</p>
+                  <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">
+                    📱 Device Redirection</h3>
+                  <p class="text-muted" style="font-size: 0.75rem;">Route users based on their device operating system.
+                  </p>
                 </div>
                 <label class="switch">
                   <input type="checkbox" id="editLinkDeviceRedirectEnabled">
                   <span class="slider"></span>
                 </label>
               </div>
-              <div id="editLinkDeviceFields" class="hidden" style="display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 0.75rem;">
+              <div id="editLinkDeviceFields" class="hidden"
+                style="display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 0.75rem;">
                 <div class="form-group" style="margin-bottom: 0;">
-                  <label for="editLinkDesktopUrl" class="form-label" style="font-size: 0.8rem;">Desktop Redirect URL</label>
+                  <label for="editLinkDesktopUrl" class="form-label" style="font-size: 0.8rem;">Desktop Redirect
+                    URL</label>
                   <input type="url" id="editLinkDesktopUrl" class="form-input" placeholder="https://desktop.domain.com">
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
-                  <label for="editLinkAndroidUrl" class="form-label" style="font-size: 0.8rem;">Android Redirect (Play Store)</label>
-                  <input type="url" id="editLinkAndroidUrl" class="form-input" placeholder="https://play.google.com/store/...">
+                  <label for="editLinkAndroidUrl" class="form-label" style="font-size: 0.8rem;">Android Redirect (Play
+                    Store)</label>
+                  <input type="url" id="editLinkAndroidUrl" class="form-input"
+                    placeholder="https://play.google.com/store/...">
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
-                  <label for="editLinkIosUrl" class="form-label" style="font-size: 0.8rem;">iPhone/iPad Redirect (App Store)</label>
+                  <label for="editLinkIosUrl" class="form-label" style="font-size: 0.8rem;">iPhone/iPad Redirect (App
+                    Store)</label>
                   <input type="url" id="editLinkIosUrl" class="form-input" placeholder="https://apps.apple.com/app/...">
                 </div>
               </div>
@@ -776,23 +978,30 @@
             <div class="glass-card settings-sub-card" style="display: flex; flex-direction: column; gap: 0.75rem;">
               <div class="flex align-center justify-between">
                 <div>
-                  <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">🌍 Geo-Targeting Redirect</h3>
-                  <p class="text-muted" style="font-size: 0.75rem;">Redirect visitors based on their current country.</p>
+                  <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.25rem;">
+                    🌍 Geo-Targeting Redirect</h3>
+                  <p class="text-muted" style="font-size: 0.75rem;">Redirect visitors based on their current country.
+                  </p>
                 </div>
                 <label class="switch">
                   <input type="checkbox" id="editLinkGeoRedirectEnabled">
                   <span class="slider"></span>
                 </label>
               </div>
-              <div id="editLinkGeoFields" class="hidden" style="display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 0.75rem;">
+              <div id="editLinkGeoFields" class="hidden"
+                style="display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 0.75rem;">
                 <label class="form-label" style="font-size: 0.8rem;">Country Routing Rules</label>
-                <div id="editGeoRulesListContainer" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <div id="editGeoRulesListContainer"
+                  style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.5rem;">
                   <!-- Geo rows injected by JS -->
                 </div>
-                <button type="button" id="editAddGeoRuleBtn" class="btn btn-secondary btn-sm" style="font-size:0.75rem;">+ Add Geo Rule</button>
+                <button type="button" id="editAddGeoRuleBtn" class="btn btn-secondary btn-sm"
+                  style="font-size:0.75rem;">+ Add Geo Rule</button>
                 <div class="form-group" style="margin-bottom: 0; margin-top: 0.5rem;">
-                  <label for="editLinkGeoDefaultUrl" class="form-label" style="font-size: 0.8rem;">Default Fallback URL</label>
-                  <input type="url" id="editLinkGeoDefaultUrl" class="form-input" placeholder="https://fallback.domain.com">
+                  <label for="editLinkGeoDefaultUrl" class="form-label" style="font-size: 0.8rem;">Default Fallback
+                    URL</label>
+                  <input type="url" id="editLinkGeoDefaultUrl" class="form-input"
+                    placeholder="https://fallback.domain.com">
                 </div>
               </div>
             </div>
@@ -823,7 +1032,9 @@
       </div>
       <div class="panel-body">
         <p>Are you sure you want to permanently delete this short link? This action cannot be undone.</p>
-        <p class="mt-2 text-muted" id="deleteLinkDisplay" style="font-family: monospace; font-size: 0.9rem; background: rgba(0,0,0,0.15); padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border-glass);"></p>
+        <p class="mt-2 text-muted" id="deleteLinkDisplay"
+          style="font-family: monospace; font-size: 0.9rem; background: rgba(0,0,0,0.15); padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border-glass);">
+        </p>
         <input type="hidden" id="deleteLinkId">
         <div class="flex gap-2 mt-6" style="justify-content: flex-end;">
           <button type="button" id="cancelDeleteBtn" class="btn btn-secondary">Cancel</button>
@@ -838,7 +1049,8 @@
     <div class="panel-header">
       <h2 class="panel-title" style="font-size: 1.05rem;">🔔 Notifications</h2>
       <div class="flex gap-2 align-center">
-        <button id="clearAllNotificationsBtn" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.725rem; white-space: nowrap;">Clear All</button>
+        <button id="clearAllNotificationsBtn" class="btn btn-secondary btn-sm"
+          style="padding: 0.25rem 0.5rem; font-size: 0.725rem; white-space: nowrap;">Clear All</button>
         <button id="closeNotificationPanelBtn" class="btn-icon-only" aria-label="Close notification panel">✕</button>
       </div>
     </div>
@@ -851,10 +1063,10 @@
 
   <!-- Dashboard JavaScript Code Logic -->
   <script type="module" src="js/admin.js?v=1.1.0"></script>
-  
+
   <script>
     // Fail-safe timeout script to catch CDN load errors
-    setTimeout(function() {
+    setTimeout(function () {
       if (!window.firebaseAppLoaded) {
         var authCard = document.querySelector('.auth-card');
         if (authCard) {
@@ -872,4 +1084,5 @@
     }, 6000);
   </script>
 </body>
+
 </html>

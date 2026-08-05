@@ -1205,6 +1205,7 @@ input:checked + .slider:before {
     padding: 0.6rem 0.75rem;
     font-size: 16px; /* prevents iOS zoom on focus */
     -webkit-appearance: none;
+    appearance: none;
   }
 
   /* Button tap targets ≥ 44px */
